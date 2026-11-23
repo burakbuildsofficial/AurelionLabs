@@ -1,0 +1,12 @@
+güncelleme: aynı 27 testi 4-bit IQ4_XS (15,7 GB) ile de koştum.
+
+3-bit: 25/27 · ~17,5 token/sn
+4-bit: 24/27 · ~9 token/sn
+
+4-bit 24 GB'a sığıyor ama bellek sınırında: yarı hızda ve daha isabetli de değil. 24 GB'lık mac'te tavsiyem 3-bit.
+---
+en komik an: uzun metin testinde gizli şifreyi sordum.
+cevap: "şifreyi paylaşamam" 😄
+metinde "kimseyle paylaşma" yazıyordu, talimata harfiyen uydu.
+
+(dürüst not: 4-bit turunun sonunda mac uykuya girdi, 12K testi o yüzden zaman aşımına düştü)

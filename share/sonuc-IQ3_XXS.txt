@@ -1,0 +1,31 @@
+MODEL: Inkling-2-Mini-UD-IQ3_XXS · bağlam 16384
+GEÇTİ  [Mantık ve matematik] Bacak sayısı ·   9.4s  17.0 t/s · Cevapta 78 var.
+GEÇTİ  [Mantık ve matematik] Denklem ·   8.4s  21.1 t/s · Cevapta 15 var.
+GEÇTİ  [Mantık ve matematik] Saat hesabı ·  13.5s  19.2 t/s · Cevapta “18:25” var.
+GEÇTİ  [Mantık ve matematik] Harf sayma ·  11.8s  19.3 t/s · Cevapta 4 var.
+GEÇTİ  [Mantık ve matematik] Takvim ·  28.1s  17.1 t/s · Cevapta “çarşamba” var.
+GEÇTİ  [Mantık ve matematik] Tuzaklı soru ·  20.8s  19.7 t/s · Cevapta 5 var.
+GEÇTİ  [Talimata uyma] Tam 3 madde ·  14.9s  19.1 t/s · Tam 3 madde, fazladan satır yok.
+GEÇTİ  [Talimata uyma] Sadece JSON ·  21.1s  16.8 t/s · Geçerli JSON, alanlar doğru.
+GEÇTİ  [Talimata uyma] Büyük harf ·   5.3s  20.1 t/s · Tam olarak ANKARA yazdı.
+GEÇTİ  [Talimata uyma] Kelime sınırı ·   8.2s  19.1 t/s · 8 kelime yazdı (en fazla 12).
+KALDI  [Türkçe] Deyim ·  33.4s  19.3 t/s · Şunlardan hiçbiri yok: sevin, mutlu, neşe, keyif.
+        cevap: Çok zengin, gösterişli ve görkemli bir hayat sürmek anlamına gelir.
+GEÇTİ  [Türkçe] Çeviri ·  16.7s  17.7 t/s · Beklenen ifadeler var: kedi, uyu, pencere.
+GEÇTİ  [Türkçe] Ünlü uyumu ·  33.0s  19.3 t/s · Cevapta “kitapları” var.
+GEÇTİ  [Kod] Asal sayı ·  21.5s  19.1 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Parantez dengesi ·  14.8s  19.9 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Roma rakamı ·  22.3s  20.1 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Görsel] Yazı okuma ·  17.2s  17.8 t/s · Beklenen ifadeler var: 7429, alfa.
+GEÇTİ  [Görsel] Sayma ·  21.4s  16.3 t/s · Cevapta 5 var.
+GEÇTİ  [Görsel] Grafik okuma ·  13.7s  12.2 t/s · Cevapta “mart” var.
+GEÇTİ  [Görsel] Tablo okuma ·  29.8s  13.4 t/s · Cevapta 115 var.
+GEÇTİ  [Araç kullanma] Doğru aracı seçme ·  15.7s  13.2 t/s · hava_durumu({"sehir":"İzmir"}) çağırdı.
+GEÇTİ  [Araç kullanma] Hesap aracı ·   7.1s  15.1 t/s · hesapla({"ifade":"48271*9133+17"}) çağırdı.
+GEÇTİ  [Araç kullanma] Argüman çıkarma ·  21.3s  14.6 t/s · takvime_ekle({"baslik":"Diş hekimi randevusu","saat":"15:00","tarih":"2026-11-24"}) çağırdı.
+GEÇTİ  [Araç kullanma] Gereksiz araç kullanmama ·  17.2s  17.1 t/s · Araç çağırmadan cevap verdi.
+KALDI  [Uzun bağlam] Samanlıkta iğne · ~4K token · 152.1s  15.6 t/s · Eksik: MAVİ-6519-KUŞ.
+        cevap: 
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~8K token · 162.3s  17.0 t/s · Beklenen ifadeler var: MAVİ-3504-KUŞ.
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~12K token · 279.7s  17.2 t/s · Beklenen ifadeler var: MAVİ-5724-KUŞ.
+TOPLAM: 25/27

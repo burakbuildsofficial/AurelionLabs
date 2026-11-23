@@ -1,0 +1,32 @@
+MODEL: Inkling-2-Mini-UD-IQ4_XS · bağlam 16384
+GEÇTİ  [Mantık ve matematik] Bacak sayısı ·  18.8s  11.1 t/s · Cevapta 78 var.
+GEÇTİ  [Mantık ve matematik] Denklem ·  12.3s  13.1 t/s · Cevapta 15 var.
+GEÇTİ  [Mantık ve matematik] Saat hesabı ·  27.2s  12.5 t/s · Cevapta “18:25” var.
+GEÇTİ  [Mantık ve matematik] Harf sayma ·  38.2s  13.3 t/s · Cevapta 4 var.
+GEÇTİ  [Mantık ve matematik] Takvim ·  71.9s  14.0 t/s · Cevapta “çarşamba” var.
+GEÇTİ  [Mantık ve matematik] Tuzaklı soru ·  20.1s  13.4 t/s · Cevapta 5 var.
+GEÇTİ  [Talimata uyma] Tam 3 madde ·  36.0s   9.6 t/s · Tam 3 madde, fazladan satır yok.
+GEÇTİ  [Talimata uyma] Sadece JSON ·  40.9s  10.2 t/s · Geçerli JSON, alanlar doğru.
+GEÇTİ  [Talimata uyma] Büyük harf ·  14.5s  11.4 t/s · Tam olarak ANKARA yazdı.
+GEÇTİ  [Talimata uyma] Kelime sınırı ·  21.3s  11.0 t/s · 10 kelime yazdı (en fazla 12).
+KALDI  [Türkçe] Deyim · 127.1s  11.8 t/s · Şunlardan hiçbiri yok: sevin, mutlu, neşe, keyif.
+        cevap: Etekleri zil çalmak, bir kimsenin ya da bir şeyin gösterişli ve dikkat çekici biçimde etkileyici, cazibeli durması anlamına gelir.
+GEÇTİ  [Türkçe] Çeviri ·  60.8s   6.7 t/s · Beklenen ifadeler var: kedi, uyu, pencere.
+GEÇTİ  [Türkçe] Ünlü uyumu ·  70.6s   6.8 t/s · Cevapta “kitapları” var.
+GEÇTİ  [Kod] Asal sayı ·  51.0s   7.3 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Parantez dengesi ·  53.3s   8.2 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Roma rakamı ·  70.5s   7.8 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Görsel] Yazı okuma ·  41.8s   7.6 t/s · Beklenen ifadeler var: 7429, alfa.
+GEÇTİ  [Görsel] Sayma ·  49.4s   8.7 t/s · Cevapta 5 var.
+GEÇTİ  [Görsel] Grafik okuma ·  33.6s   6.1 t/s · Cevapta “mart” var.
+GEÇTİ  [Görsel] Tablo okuma ·  44.5s   7.0 t/s · Cevapta 115 var.
+GEÇTİ  [Araç kullanma] Doğru aracı seçme ·  39.5s   5.4 t/s · hava_durumu({"sehir":"İzmir"}) çağırdı.
+GEÇTİ  [Araç kullanma] Hesap aracı ·  23.5s   5.7 t/s · hesapla({"ifade":"48271*9133+17"}) çağırdı.
+GEÇTİ  [Araç kullanma] Argüman çıkarma ·  74.6s   5.1 t/s · takvime_ekle({"baslik":"Diş hekimi randevusu","saat":"15:00","tarih":"2026-11-24"}) çağırdı.
+GEÇTİ  [Araç kullanma] Gereksiz araç kullanmama ·  56.8s   5.8 t/s · Araç çağırmadan cevap verdi.
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~4K token · 390.4s   6.7 t/s · Beklenen ifadeler var: MAVİ-6371-KUŞ.
+KALDI  [Uzun bağlam] Samanlıkta iğne · ~8K token · 499.1s   5.6 t/s · Eksik: MAVİ-7833-KUŞ.
+        cevap: Şifreyi paylaşamam.
+HATA   [Uzun bağlam] Samanlıkta iğne · ~12K token ·  · İstek zaman aşımına uğradı.
+        cevap: 
+TOPLAM: 24/27
