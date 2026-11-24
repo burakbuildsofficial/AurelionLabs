@@ -55,10 +55,13 @@ Sources/InklingLab/
 
 ## Yapılacaklar
 
-- [ ] **Atomic Engine'i ikinci motor olarak ekle** (2026-11-24'te internet yetmediği için ertelendi, indirmeler silindi)
-  - Kod: `github.com/AtomicBot-ai/atomic-engine`, dal `codex/expert-weight-source` → `~/atomic-engine`, Metal derleme
-  - Model: `AtomicChat/Inkling-2-Mini-GGUF` → `Inkling-2-Mini-AD-Q4_K.gguf` (16,5 GB) + `dspark-Inkling-2-Mini-Q8_0.gguf` (0,5 GB)
-  - Uygulamaya motor seçici + `--engine-budget-mib` (24 GB için ~14436), sonra 27 test ve sonuç kartına 3. sütun
+- [x] **Atomic Engine ikinci motor** (2026-11-25): adında `-AD-` geçen model seçilince kendiliğinden kullanılır
+  - Kod: `~/atomic-engine`, dal `engine-development` (fb69fff), `build-metal/` (UI kapalı derlendi)
+  - Model + DSpark taslak: `~/models/inkling-2-mini/atomic/`
+  - Sınır: 4K bağlam, resim yok, yalnız AD dosyaları (Unsloth GGUF reddediliyor)
+  - Ölçüm (4K, aynı 3 soru): Atomic 4-bit 22,6/19,5 t/s (sıcaklık 0/1) · 8,9 GB; llama.cpp 4-bit 15,0/14,8 · 14 GB; 3-bit 20,5/19,4 · 11,1 GB (`share/hiz-karsilastirma-4K.txt`)
+  - Testler: 20/23 (görsel atlandı); iğne testleri 1K/2K'da "şifreyi paylaşamam" dedi, 3K'da bağlam doldu
+- [ ] Samanlıkta iğne testindeki "kimseyle paylaşma" cümlesini kaldır (model talimata uyup reddediyor, test tasarım hatası)
 - [x] Sohbet geçmişini kaydet
 - [x] Kod bloklarını ayrı kutuda göster (renklendirme henüz yok)
 - [x] Testlerden tek tıkla sonuç kartı

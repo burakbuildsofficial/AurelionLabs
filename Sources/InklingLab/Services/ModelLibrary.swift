@@ -82,19 +82,19 @@ final class ModelLibrary {
 
     // MARK: Ad çözümleme
 
-    nonisolated private static let quantPattern = #"(?i)[-_.]((?:UD-)?(?:I?Q\d[A-Z0-9_]*|BF16|F16|F32|MXFP4[A-Z0-9_]*))$"#
+    nonisolated private static let quantPattern = #"(?i)[-_.]((?:UD-|AD-)?(?:I?Q\d[A-Z0-9_]*|BF16|F16|F32|MXFP4[A-Z0-9_]*))$"#
 
     /// "Inkling-2-Mini-UD-IQ3_XXS" → "IQ3_XXS"
     nonisolated static func quant(of name: String) -> String {
         guard let r = name.range(of: quantPattern, options: .regularExpression) else { return "" }
-        return String(name[r].dropFirst()).replacingOccurrences(of: "UD-", with: "")
+        return String(name[r].dropFirst()).replacingOccurrences(of: "UD-", with: "").replacingOccurrences(of: "AD-", with: "")
     }
 
     /// "Inkling-2-Mini-UD-IQ3_XXS" → "Inkling 2 Mini"
     nonisolated static func family(of name: String) -> String {
         let base = name.replacingOccurrences(of: quantPattern, with: "", options: .regularExpression)
         let words = base.replacingOccurrences(of: "_", with: "-").split(separator: "-").map(String.init)
-        return words.filter { !["GGUF", "gguf", "UD"].contains($0) }.joined(separator: " ")
+        return words.filter { !["GGUF", "gguf", "UD", "AD"].contains($0) }.joined(separator: " ")
     }
 
     private static func mmproj(in dir: URL) -> String? {

@@ -236,15 +236,30 @@ struct ServerSection: View {
         let server = store.server
         @Bindable var bserver = server
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Sunucu (llama.cpp)")
+            SectionHeader(title: "Sunucu (\(server.config.engineName))")
             VStack(alignment: .leading, spacing: 12) {
                 statusRow(server.state)
 
+                if server.config.usesAtomic {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Atomic Engine bellek bütçesi").font(Theme.Font.callout.weight(.semibold))
+                        FlowRow(spacing: 6) {
+                            ForEach([8, 10, 12, 14, 16], id: \.self) { g in
+                                Chip(title: "\(g) GB", selected: server.config.budgetGiB == g) {
+                                    bserver.config.atomicBudgetGiB = g
+                                }
+                            }
+                        }
+                        Text("Model bu kadar belleği kullanır, sığmayan uzmanları SSD'den okur. Büyük bütçe daha hızlı ama Mac'te diğer işlere daha az yer kalır. Bu modda bağlam 4K'dır ve resim desteği yoktur.")
+                            .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Bağlam boyutu").font(Theme.Font.callout.weight(.semibold))
                     FlowRow(spacing: 6) {
                         ForEach(contexts, id: \.self) { c in
-                            Chip(title: "\(c / 1024)K", selected: server.config.contextSize == c) {
+                            Chip(title: "\(c / 1024)K", selected: !server.config.usesAtomic && server.config.contextSize == c) {
                                 bserver.config.contextSize = c
                             }
                         }

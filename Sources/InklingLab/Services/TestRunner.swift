@@ -51,7 +51,9 @@ final class TestRunner {
 
     func rebuild() {
         guard !isRunning else { return }
+        // Resim desteği olmayan modelde (ör. Atomic Engine) görsel testler haksız "kaldı" sayılmasın diye atlanır.
         tests = TestSuite.all(contextSize: server.runningConfig?.contextSize ?? server.config.contextSize)
+            .filter { $0.image == nil || server.imagesAvailable }
         results = Dictionary(uniqueKeysWithValues: tests.map { ($0.id, Result(id: $0.id)) })
     }
 

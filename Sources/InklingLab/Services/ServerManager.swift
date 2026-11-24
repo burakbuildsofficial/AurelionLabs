@@ -22,6 +22,24 @@ final class ServerManager {
         var contextSize = 16384
         var port = 8001
         var imagesEnabled = true
+        // Atomic Engine (yalnız adında "-AD-" geçen modellerde). Eski kayıtlar bozulmasın diye isteğe bağlı.
+        var atomicServerPath: String?
+        var atomicBudgetGiB: Int?
+
+        static let atomicContext = 4096
+        var usesAtomic: Bool { URL(fileURLWithPath: modelPath).lastPathComponent.contains("-AD-") }
+        var atomicServer: String {
+            atomicServerPath ?? NSString("~/atomic-engine/build-metal/bin/llama-server").expandingTildeInPath
+        }
+        var budgetGiB: Int { atomicBudgetGiB ?? 14 }
+        var engineName: String { usesAtomic ? "Atomic Engine" : "llama.cpp" }
+
+        /// Modelin klasöründeki DSpark taslak modeli.
+        var draftPath: String? {
+            let dir = URL(fileURLWithPath: modelPath).deletingLastPathComponent()
+            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+            return files.first { $0.lastPathComponent.lowercased().hasPrefix("dspark") && $0.pathExtension == "gguf" }?.path
+        }
     }
 
     private(set) var state: State = .stopped
@@ -34,6 +52,7 @@ final class ServerManager {
     var needsRestart: Bool {
         guard var r = runningConfig else { return false }
         r.imagesEnabled = config.imagesEnabled   // mmproj'u olmayan model için kendiliğinden kapanır
+        if r.usesAtomic { r.contextSize = config.contextSize }   // Atomic her zaman 4K açılır
         return r != config
     }
     var imagesAvailable: Bool {
@@ -125,6 +144,7 @@ final class ServerManager {
     func start() {
         guard process == nil else { return }
         let fm = FileManager.default
+        if config.usesAtomic { startAtomic(); return }
         guard fm.isExecutableFile(atPath: config.serverPath) else {
             state = .failed("llama-server bulunamadı: \(config.serverPath). Yolu Sunucu bölümünden düzelt.")
             return
@@ -149,8 +169,42 @@ final class ServerManager {
             }
         }
 
+        launch(executable: config.serverPath, args: args, launched: launched)
+    }
+
+    /// Atomic Engine profili (README'deki AD-Q4_K + DSpark-3 komutu): 4K bağlam, bellek bütçesi, taslak model.
+    private func startAtomic() {
+        let fm = FileManager.default
+        let exe = config.atomicServer
+        guard fm.isExecutableFile(atPath: exe) else {
+            state = .failed("Atomic Engine bulunamadı: \(exe). ~/atomic-engine içinde derlenmesi gerekiyor.")
+            return
+        }
+        guard fm.fileExists(atPath: config.modelPath) else {
+            state = .failed("Model dosyası bulunamadı: \(config.modelPath).")
+            return
+        }
+        var launched = config
+        launched.contextSize = Config.atomicContext
+        launched.imagesEnabled = false
+        var args = ["-m", config.modelPath, "--jinja",
+                    "--engine-budget-mib", String(config.budgetGiB * 1024 + 100), "-fit", "off",
+                    "-c", String(Config.atomicContext), "-b", "1024", "-ub", "1024", "-np", "1",
+                    "-fa", "on", "-ctk", "q4_0", "-ctv", "q4_0", "-ngl", "all", "-t", "8", "-tb", "8",
+                    "--cache-ram", "0", "--ctx-checkpoints", "0",
+                    "--host", "127.0.0.1", "--port", String(config.port)]
+        if let draft = config.draftPath {
+            args += ["-md", draft, "--spec-type", "draft-dspark", "--spec-draft-n-max", "3", "--spec-draft-n-ubatch", "32",
+                     "-ctkd", "q4_0", "-ctvd", "q4_0", "-ngld", "99"]
+        } else {
+            append("Klasörde DSpark taslak modeli yok; taslaksız çalışılıyor (daha yavaş).")
+        }
+        launch(executable: exe, args: args, launched: launched)
+    }
+
+    private func launch(executable: String, args: [String], launched: Config) {
         let p = Process()
-        p.executableURL = URL(fileURLWithPath: config.serverPath)
+        p.executableURL = URL(fileURLWithPath: executable)
         p.arguments = args
         let pipe = Pipe()
         p.standardOutput = pipe
@@ -167,7 +221,7 @@ final class ServerManager {
         }
 
         logTail.removeAll()
-        append("Başlatılıyor: llama-server " + args.joined(separator: " "))
+        append("Başlatılıyor (\(launched.engineName)): " + args.joined(separator: " "))
         do {
             try p.run()
         } catch {

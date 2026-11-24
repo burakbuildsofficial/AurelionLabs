@@ -194,7 +194,7 @@ extension ModelMenu {
     }
 
     static func label(_ m: ModelLibrary.Model) -> String {
-        "\(m.family) · \(m.quant.isEmpty ? m.fileName : m.quant) · \(StatsLine.num(m.sizeGB, 1)) GB"
+        "\(m.family) · \(m.quant.isEmpty ? m.fileName : m.quant) · \(StatsLine.num(m.sizeGB, 1)) GB" + (m.fileName.contains("-AD-") ? " · Atomic" : "")
     }
 }
 

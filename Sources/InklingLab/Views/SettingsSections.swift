@@ -60,6 +60,12 @@ struct ModelsSection: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(m.family).font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
+                    if m.fileName.contains("-AD-") {
+                        Label("Atomic Engine", systemImage: "bolt.fill")
+                            .font(Theme.Font.small.weight(.semibold))
+                            .foregroundStyle(Theme.Tone.mild.color)
+                            .help("Bu model Atomic Engine ile açılır: bellek bütçesi + DSpark taslak model, 4K bağlam")
+                    }
                     if !m.quant.isEmpty {
                         Text(m.bits.map { "\($0) · \(m.quant)" } ?? m.quant)
                             .font(Theme.Font.small.weight(.semibold))

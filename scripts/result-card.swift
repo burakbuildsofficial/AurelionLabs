@@ -14,7 +14,9 @@ struct Run {
     var categories: [Category] = []
     var speeds: [Double] = []
     var failed: [String] = []
-    var avgSpeed: Double { speeds.isEmpty ? 0 : speeds.reduce(0, +) / Double(speeds.count) }
+    var speedOverride: Double?
+    var avgSpeed: Double { speedOverride ?? (speeds.isEmpty ? 0 : speeds.reduce(0, +) / Double(speeds.count)) }
+    var ratio: Double { total == 0 ? 0 : Double(passed) / Double(total) }
 
     init(label: String, file: String, model: String) {
         self.label = label
@@ -28,7 +30,7 @@ struct Run {
             let ok = ns.substring(with: m.range(at: 1)) == "GEÇTİ"
             let cat = ns.substring(with: m.range(at: 2))
             if m.range(at: 5).location != NSNotFound, let s = Double(ns.substring(with: m.range(at: 5))), s > 0 { speeds.append(s) }
-            if !ok { failed.append(ns.substring(with: m.range(at: 3)).replacingOccurrences(of: "Samanlıkta iğne · ", with: "İğne ")) }
+            if !ok { failed.append(ns.substring(with: m.range(at: 3)).replacingOccurrences(of: "Samanlıkta iğne · ~", with: "İğne ").replacingOccurrences(of: " token", with: "")) }
             if let i = categories.firstIndex(where: { $0.name == cat }) {
                 categories[i].total += 1; if ok { categories[i].passed += 1 }
             } else {
@@ -78,7 +80,7 @@ struct RunCard: View {
                 }
                 VStack(alignment: .leading, spacing: 0) {
                     Text(tr(run.avgSpeed, 1)).font(.system(size: 52, weight: .bold).monospacedDigit()).foregroundStyle(indigo)
-                    Text("token/sn ort.").font(.system(size: 20)).foregroundStyle(sub)
+                    Text(ProcessInfo.processInfo.environment["SPEED_LABEL"] ?? "token/sn ort.").font(.system(size: 20)).foregroundStyle(sub)
                 }
             }
             VStack(spacing: 11) {
@@ -88,13 +90,13 @@ struct RunCard: View {
                         GeometryReader { g in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(raised)
-                                Capsule().fill(LinearGradient(colors: c.passed == c.total ? [indigo, indigoLight] : [indigoLight.opacity(0.7), indigoLight.opacity(0.7)],
+                                Capsule().fill(LinearGradient(colors: c.total > 0 && c.passed == c.total ? [indigo, indigoLight] : [indigoLight.opacity(0.7), indigoLight.opacity(0.7)],
                                                               startPoint: .leading, endPoint: .trailing))
                                     .frame(width: g.size.width * CGFloat(c.passed) / CGFloat(max(c.total, 1)))
                             }
                         }.frame(height: 12)
-                        Text("\(c.passed)/\(c.total)").font(.system(size: 18, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(c.passed == c.total ? good : sub).frame(width: 48, alignment: .trailing)
+                        Text(c.total == 0 ? "yok" : "\(c.passed)/\(c.total)").font(.system(size: 18, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(c.total > 0 && c.passed == c.total ? good : sub).frame(width: 48, alignment: .trailing)
                     }
                 }
             }
@@ -124,24 +126,24 @@ struct ResultCard: View {
     let icon: NSImage?
 
     var body: some View {
-        let bestScore = runs.map(\.passed).max() ?? 0
-        let tie = runs.filter { $0.passed == bestScore }.count > 1
+        let bestScore = runs.map(\.ratio).max() ?? 0
+        let tie = runs.filter { $0.ratio == bestScore }.count > 1
         VStack(alignment: .leading, spacing: 30) {
             HStack(spacing: 22) {
                 if let icon { Image(nsImage: icon).resizable().frame(width: 92, height: 92) }
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Inkling 2 Mini, 24 GB MacBook'ta").font(.system(size: 46, weight: .bold)).foregroundStyle(ink)
-                    Text("Aynı \(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok")
+                    Text(ProcessInfo.processInfo.environment["SUBTITLE"] ?? "Aynı \(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok")
                         .font(.system(size: 24)).foregroundStyle(sub)
                 }
             }
             HStack(spacing: 28) {
                 ForEach(Array(runs.enumerated()), id: \.offset) { _, r in
-                    RunCard(run: r, best: !tie && r.passed == bestScore && runs.count > 1)
+                    RunCard(run: r, best: !tie && r.ratio == bestScore && runs.count > 1)
                 }
             }
             HStack {
-                Text("Apple M5 Pro · 24 GB · llama.cpp · Unsloth GGUF · 16K bağlam")
+                Text(ProcessInfo.processInfo.environment["FOOTER"] ?? "Apple M5 Pro · 24 GB · llama.cpp · Unsloth GGUF · 16K bağlam")
                 Spacer()
                 Text("Inkling Lab")
                     .fontWeight(.semibold).foregroundStyle(indigo)
@@ -163,6 +165,14 @@ guard a.count >= 6, (a.count - 3) % 3 == 0 else {
 var runs: [Run] = []
 var i = 3
 while i + 2 < a.count { runs.append(Run(label: a[i], file: a[i + 1], model: a[i + 2])); i += 3 }
+if let sp = ProcessInfo.processInfo.environment["SPEEDS"] {
+    for (j, v) in sp.split(separator: ",").enumerated() where j < runs.count { runs[j].speedOverride = Double(v) }
+}
+// Bir çalıştırmada olmayan kategoriyi "yok" olarak göster (ör. resim desteği olmayan motor).
+let allCats = runs.flatMap { $0.categories.map(\.name) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+for j in runs.indices {
+    runs[j].categories = allCats.map { n in runs[j].categories.first { $0.name == n } ?? Category(name: n) }
+}
 
 MainActor.assumeIsolated {
     let r = ImageRenderer(content: ResultCard(runs: runs, icon: NSImage(contentsOfFile: a[2])))

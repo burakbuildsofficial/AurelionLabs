@@ -1,0 +1,24 @@
+atomic-Q4K: hazır (süreç belleği ~8,9 GB)
+atomic-Q4K · sıcaklık 0 · 512 token · 21.9 token/sn · taslak kabul 235/822
+atomic-Q4K · sıcaklık 0 · 512 token · 25.1 token/sn · taslak kabul 288/667
+atomic-Q4K · sıcaklık 0 · 467 token · 20.9 token/sn · taslak kabul 217/747
+atomic-Q4K · sıcaklık 1.0 · 512 token · 16.9 token/sn · taslak kabul 158/1055
+atomic-Q4K · sıcaklık 1.0 · 380 token · 22.8 token/sn · taslak kabul 198/543
+atomic-Q4K · sıcaklık 1.0 · 512 token · 18.8 token/sn · taslak kabul 200/929
+llamacpp-IQ4: hazır (süreç belleği ~14,0 GB)
+llamacpp-IQ4 · sıcaklık 0 · 512 token · 14.3 token/sn
+llamacpp-IQ4 · sıcaklık 0 · 474 token · 15.5 token/sn
+llamacpp-IQ4 · sıcaklık 0 · 473 token · 15.1 token/sn
+llamacpp-IQ4 · sıcaklık 1.0 · 512 token · 14.9 token/sn
+llamacpp-IQ4 · sıcaklık 1.0 · 512 token · 14.8 token/sn
+llamacpp-IQ4 · sıcaklık 1.0 · 512 token · 14.6 token/sn
+llamacpp-IQ3: hazır (süreç belleği ~11,1 GB)
+llamacpp-IQ3 · sıcaklık 0 · 486 token · 21.2 token/sn
+llamacpp-IQ3 · sıcaklık 0 · 448 token · 20.1 token/sn
+llamacpp-IQ3 · sıcaklık 0 · 434 token · 20.1 token/sn
+llamacpp-IQ3 · sıcaklık 1.0 · 512 token · 19.3 token/sn
+llamacpp-IQ3 · sıcaklık 1.0 · 395 token · 19.4 token/sn
+llamacpp-IQ3 · sıcaklık 1.0 · 512 token · 19.4 token/sn
+BİTTİ
+
+[exited with code 0]
