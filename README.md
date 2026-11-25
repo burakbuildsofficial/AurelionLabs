@@ -43,7 +43,7 @@ cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_METAL=ON && cmake --build ~/lla
 #    ~/models/inkling-2-mini/Inkling-2-Mini-UD-IQ3_XXS.gguf  (+ mmproj-F16.gguf for images)
 
 # 3. The app
-git clone https://github.com/BuraakAI/inkling-lab && cd inkling-lab
+git clone https://github.com/burakbuildsofficial/inkling-lab && cd inkling-lab
 ./scripts/build-app.sh && open build/InklingLab.app
 ```
 
