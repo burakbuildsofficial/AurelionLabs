@@ -1,0 +1,18 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "What you expected vs. what you saw" }
+    validations: { required: true }
+  - type: input
+    id: mac
+    attributes: { label: Mac, placeholder: "M3 Pro, 18 GB, macOS 15.4" }
+    validations: { required: true }
+  - type: input
+    id: model
+    attributes: { label: Model and engine, placeholder: "Inkling-2-Mini-UD-IQ3_XXS.gguf · llama.cpp b12611" }
+  - type: textarea
+    id: log
+    attributes: { label: Server log, description: "Settings › Server › log, the last lines", render: text }

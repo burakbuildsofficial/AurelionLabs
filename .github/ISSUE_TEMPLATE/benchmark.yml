@@ -1,0 +1,22 @@
+name: Benchmark result
+description: Share how fast a model runs on your Mac
+labels: [benchmark]
+body:
+  - type: input
+    id: mac
+    attributes: { label: Mac, placeholder: "M4 Max, 64 GB" }
+    validations: { required: true }
+  - type: input
+    id: model
+    attributes: { label: Model file, placeholder: "Inkling-2-Mini-UD-IQ4_XS.gguf" }
+    validations: { required: true }
+  - type: input
+    id: engine
+    attributes: { label: Engine and context, placeholder: "llama.cpp, 16K" }
+  - type: input
+    id: speed
+    attributes: { label: Speed (tok/s) and memory, placeholder: "18.2 tok/s, 14 GB" }
+    validations: { required: true }
+  - type: input
+    id: tests
+    attributes: { label: Test score (optional), placeholder: "25/27" }
