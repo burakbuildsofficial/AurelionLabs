@@ -83,7 +83,7 @@ struct LLMClient {
 
     // MARK: Tek parça (akışsız) istek — testler için
 
-    struct ToolCall { let name: String; let arguments: String }
+    struct ToolCall { var id = ""; let name: String; let arguments: String }
 
     struct Completion {
         var content = ""
@@ -117,7 +117,8 @@ struct LLMClient {
             out.reasoning = msg["reasoning_content"] as? String ?? ""
             for call in msg["tool_calls"] as? [[String: Any]] ?? [] {
                 if let f = call["function"] as? [String: Any], let name = f["name"] as? String {
-                    out.toolCalls.append(ToolCall(name: name, arguments: f["arguments"] as? String ?? ""))
+                    out.toolCalls.append(ToolCall(id: call["id"] as? String ?? UUID().uuidString, name: name,
+                                                  arguments: f["arguments"] as? String ?? ""))
                 }
             }
         }
@@ -144,6 +145,12 @@ struct LLMClient {
                 let t = m.promptText
                 if !t.isEmpty { parts.append(["type": "text", "text": t]) }
                 out.append(["role": "user", "content": parts])
+            } else if m.role == .tool {
+                out.append(["role": "tool", "tool_call_id": m.toolCallID ?? "", "content": m.text])
+            } else if let calls = m.toolCalls, !calls.isEmpty {
+                out.append(["role": "assistant", "content": m.text,
+                            "tool_calls": calls.map { ["id": $0.id, "type": "function",
+                                                       "function": ["name": $0.name, "arguments": $0.arguments]] }])
             } else {
                 out.append(["role": m.role.rawValue, "content": m.promptText])
             }

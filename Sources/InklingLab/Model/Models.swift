@@ -67,8 +67,15 @@ struct DocumentAttachment: Codable, Identifiable, Equatable, Hashable {
     var approxTokens: Int { Int(Double(text.count) / 3.5) }
 }
 
+/// Modelin istediği araç çağrısı (ajan modu).
+struct ToolCallRecord: Codable, Equatable, Hashable {
+    var id: String
+    var name: String
+    var arguments: String
+}
+
 struct ChatMessage: Codable, Identifiable, Equatable {
-    enum Role: String, Codable { case user, assistant }
+    enum Role: String, Codable { case user, assistant, tool }
 
     var id = UUID()
     var role: Role
@@ -76,6 +83,9 @@ struct ChatMessage: Codable, Identifiable, Equatable {
     var reasoning: String = ""
     var images: [ImageAttachment] = []
     var documents: [DocumentAttachment] = []
+    var toolCalls: [ToolCallRecord]?     // asistan: istediği araçlar
+    var toolCallID: String?              // araç sonucu: hangi çağrıya ait
+    var toolName: String?
     var stats: GenStats?
     var error: String?
     var isStreaming = false
@@ -114,7 +124,9 @@ struct Conversation: Codable, Identifiable, Equatable {
         var out = "# \(title)\n\n"
         if let model { out += "_Model: \(model)_\n\n" }
         for m in messages {
+            if m.role == .tool { out += "> 🔧 \(m.toolName ?? "araç") sonucu\n\n"; continue }
             out += m.role == .user ? "## Sen\n\n" : "## Model\n\n"
+            for c in m.toolCalls ?? [] { out += "> 🔧 \(c.name)(\(c.arguments))\n\n" }
             for d in m.documents { out += "> 📎 \(d.name)\n\n" }
             if !m.images.isEmpty { out += "> 🖼 \(m.images.count) resim\n\n" }
             out += m.text + "\n\n"

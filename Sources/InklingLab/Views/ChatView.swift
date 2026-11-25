@@ -35,6 +35,9 @@ struct ChatView: View {
                 .padding(.horizontal, Theme.Space.l)
                 .padding(.bottom, Theme.Space.m)
         }
+        .sheet(item: Binding(get: { store.pendingApproval }, set: { if $0 == nil { store.resolveApproval(false) } })) { a in
+            ApprovalSheet(approval: a)
+        }
     }
 }
 
@@ -59,6 +62,37 @@ private struct EmptyChat: View {
             FlowRow(spacing: Theme.Space.s) {
                 ForEach(suggestions, id: \.self) { s in
                     Chip(title: s, selected: false) { store.draft = s }
+                }
+            }
+            Divider().overlay(Theme.hairline)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Kullanım modu").font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
+                HStack(spacing: Theme.Space.s) {
+                    ForEach(LabStore.UseMode.allCases) { mode in
+                        let selected = store.currentUseMode == mode
+                        Button { store.activate(mode) } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Label(mode.title, systemImage: mode.symbol)
+                                    .font(Theme.Font.callout.weight(.semibold))
+                                    .foregroundStyle(selected ? Theme.primary : Theme.textPrimary)
+                                Text(store.detail(for: mode))
+                                    .font(Theme.Font.small)
+                                    .foregroundStyle(Theme.textTertiary)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(10)
+                            .background(selected ? Theme.primarySoft : Theme.surfaceRaised,
+                                        in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
+                        }
+                        .buttonStyle(PressableStyle())
+                        .disabled(store.server.isBusy || store.model(for: mode) == nil)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
+                    }
+                }
+                if store.server.isBusy {
+                    Label("Model değiştiriliyor…", systemImage: "hourglass")
+                        .font(Theme.Font.small).foregroundStyle(Theme.textSecondary)
                 }
             }
         }
@@ -107,7 +141,10 @@ struct MessageRow: View {
     var body: some View {
         switch message.role {
         case .user: userBubble
-        case .assistant: assistantCard
+        case .assistant:
+            if let calls = message.toolCalls, !calls.isEmpty { ToolStepRow(message: message, calls: calls, showReasoning: showReasoning) }
+            else { assistantCard }
+        case .tool: ToolResultRow(message: message)
         }
     }
 
@@ -259,10 +296,17 @@ struct Composer: View {
                     }
                 }
                 if store.draftContextShare > 0.75 {
-                    Label("Dosyalar bağlamın %\(Int(store.draftContextShare * 100))'ini dolduruyor. Cevap kesilebilir; bağlamı Ayarlar › Sunucu'dan büyüt.",
-                          systemImage: Theme.Tone.caution.symbol)
-                        .font(Theme.Font.small)
-                        .foregroundStyle(Theme.Tone.caution.color)
+                    ModeHint(text: "Dosyalar bağlamın %\(Int(store.draftContextShare * 100))'ini dolduruyor, cevap kesilebilir.",
+                             mode: store.currentUseMode == .long ? nil : .long)
+                }
+            }
+            if !store.draftImages.isEmpty && !store.server.imagesAvailable {
+                ModeHint(text: "Açık model resim okuyamıyor.", mode: store.model(for: .general)?.mmproj != nil ? .general : nil)
+            }
+            if let step = store.agentStep {
+                HStack(spacing: Theme.Space.s) {
+                    ProgressView().controlSize(.small)
+                    Text(step).font(Theme.Font.small).foregroundStyle(Theme.textSecondary)
                 }
             }
             if let attachNote {
@@ -291,6 +335,7 @@ struct Composer: View {
             }
             HStack(spacing: Theme.Space.s) {
                 RoundAction(symbol: "paperclip", label: "Dosya ya da resim ekle") { importing = true }
+                ToolsToggle()
                 Text(hint)
                     .font(Theme.Font.small)
                     .foregroundStyle(Theme.textTertiary)
@@ -375,5 +420,139 @@ struct DocumentChip: View {
         .frame(maxWidth: 260, alignment: .leading)
         .background(Theme.surfaceRaised, in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
         .help(doc.truncated ? "Dosya uzun olduğu için ilk \(DocumentLoader.maxChars.formatted()) karakteri gönderilecek." : doc.name)
+    }
+}
+
+/// Ekli içerik açık modele uymuyorsa uyarı + tek tıkla uygun moda geçiş.
+struct ModeHint: View {
+    @Environment(LabStore.self) private var store
+    let text: String
+    let mode: LabStore.UseMode?
+
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            Image(systemName: Theme.Tone.caution.symbol).foregroundStyle(Theme.Tone.caution.color)
+            Text(text).font(Theme.Font.small).foregroundStyle(Theme.textSecondary)
+            if let mode {
+                Button("\(mode.title) moduna geç") { store.activate(mode) }
+                    .buttonStyle(.plain)
+                    .font(Theme.Font.small.weight(.semibold))
+                    .foregroundStyle(Theme.primary)
+                    .disabled(store.server.isBusy || store.isGenerating)
+            }
+        }
+    }
+}
+
+/// Ajan modu düğmesi: araçları aç/kapat, çalışma klasörünü seç.
+struct ToolsToggle: View {
+    @Environment(LabStore.self) private var store
+
+    var body: some View {
+        Menu {
+            Toggle("Araçları kullan (ajan modu)", isOn: Binding(get: { store.toolsEnabled }, set: { store.toolsEnabled = $0 }))
+            Divider()
+            Text(store.agentFolder.map { "Çalışma klasörü: \($0.lastPathComponent)" } ?? "Çalışma klasörü yok: yalnız hesap ve saat")
+            Button("Çalışma klasörü seç…", systemImage: "folder") { store.chooseAgentFolder() }
+            if store.agentFolder != nil {
+                Button("Klasörü kaldır", systemImage: "folder.badge.minus") { store.agentFolder = nil }
+            }
+            Divider()
+            Text("Dosya yazma ve komut çalıştırma her seferinde onayını ister")
+        } label: {
+            Label(store.toolsEnabled ? "Ajan açık" : "Ajan", systemImage: "wrench.and.screwdriver")
+                .font(Theme.Font.small.weight(.semibold))
+                .foregroundStyle(store.toolsEnabled ? Theme.primary : Theme.textSecondary)
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(store.toolsEnabled ? Theme.primarySoft : Theme.surfaceRaised, in: .capsule)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .fixedSize()
+        .disabled(store.isGenerating)
+        .help("Modele hesap makinesi, saat, dosya okuma/yazma ve terminal ver")
+    }
+}
+
+/// Modelin araç istediği ara adım.
+struct ToolStepRow: View {
+    let message: ChatMessage
+    let calls: [ToolCallRecord]
+    var showReasoning = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if showReasoning && !message.reasoning.isEmpty { ReasoningPanel(text: message.reasoning) }
+            if !message.text.isEmpty {
+                Text(message.text).font(Theme.Font.callout).foregroundStyle(Theme.textSecondary).textSelection(.enabled)
+            }
+            ForEach(calls, id: \.id) { c in
+                Label {
+                    Text("\(c.name)").font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
+                    + Text("  " + String(AgentTools.summary(c).prefix(160))).font(Theme.Font.caption).foregroundStyle(Theme.textTertiary)
+                } icon: {
+                    Image(systemName: "wrench.and.screwdriver").foregroundStyle(Theme.primary)
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+}
+
+/// Aracın döndürdüğü sonuç (kapalı başlar).
+struct ToolResultRow: View {
+    let message: ChatMessage
+    @State private var expanded = false
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $expanded) {
+            ScrollView {
+                Text(message.text).font(.system(.caption, design: .monospaced)).foregroundStyle(Theme.textSecondary)
+                    .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 220)
+        } label: {
+            Text("\(message.toolName ?? "araç") sonucu · " + String(message.text.prefix(80)).replacingOccurrences(of: "\n", with: " "))
+                .font(Theme.Font.caption).foregroundStyle(Theme.textTertiary).lineLimit(1)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(Theme.surfaceRaised, in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
+        .padding(.leading, 28)
+    }
+}
+
+/// Dosya yazma ya da komut çalıştırma için onay.
+struct ApprovalSheet: View {
+    @Environment(LabStore.self) private var store
+    let approval: LabStore.Approval
+
+    private var isCommand: Bool { approval.call.name == "komut_calistir" }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            Label(isCommand ? "Model bir komut çalıştırmak istiyor" : "Model bir dosya yazmak istiyor",
+                  systemImage: Theme.Tone.caution.symbol)
+                .font(Theme.Font.headline).foregroundStyle(Theme.textPrimary)
+            Text("Klasör: " + (store.agentFolder?.path ?? "-")).font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
+            ScrollView {
+                Text(isCommand ? approval.summary : preview)
+                    .font(.system(.callout, design: .monospaced)).foregroundStyle(Theme.textPrimary)
+                    .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(10)
+            }
+            .frame(maxHeight: 260)
+            .background(Theme.surfaceRaised, in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
+            HStack {
+                Spacer()
+                Button("Reddet", role: .cancel) { store.resolveApproval(false) }.keyboardShortcut(.cancelAction)
+                Button(isCommand ? "Çalıştır" : "Yaz") { store.resolveApproval(true) }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(Theme.Space.l)
+        .frame(width: 520)
+    }
+
+    private var preview: String {
+        let a = AgentTools.args(approval.call.arguments)
+        return "\(a["yol"] ?? "?")\n\n" + String((a["icerik"] ?? "").prefix(4000))
     }
 }

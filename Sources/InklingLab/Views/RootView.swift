@@ -12,6 +12,7 @@ struct RootView: View {
             Group {
                 switch store.mode {
                 case .chat: ChatView()
+                case .documents: DocumentsView()
                 case .compare: CompareView()
                 case .tests: TestsView()
                 case .settings: SettingsView()
@@ -23,7 +24,7 @@ struct RootView: View {
             .navigationSubtitle(subtitle)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    if store.mode == .chat || store.mode == .tests { PresetMenu() }
+                    if store.mode == .chat || store.mode == .tests || store.mode == .documents { PresetMenu() }
                     ModelStatusDot()
                     ModelMenu()
                     if store.mode == .chat {
@@ -53,6 +54,7 @@ struct RootView: View {
                 return "\(c.messages.count) mesaj"
             }
             return "Tamamen bu Mac'te, internet yok"
+        case .documents: return "Klasör ya da dosyaları özetle, soru sor, kaynağını gör"
         case .compare: return "Aynı soru, iki ön ayar, yan yana"
         case .tests: return "Modelin sınırlarını otomatik testlerle ölç"
         case .settings: return "Modeller, ön ayarlar, sunucu ve görünüm"

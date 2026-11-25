@@ -251,10 +251,11 @@ final class ServerManager {
 
     /// Başka bir modele tek tıkla geç: eskisini belleği boşaltana kadar kapatır, yenisini yükler.
     /// Harici bir llama-server bu portu tutuyorsa onu da kapatıp yönetimi devralır.
-    func load(modelPath: String, mmprojPath: String?) {
+    func load(modelPath: String, mmprojPath: String?, contextSize: Int? = nil, images: Bool? = nil) {
         config.modelPath = modelPath
         config.mmprojPath = mmprojPath ?? ""
-        config.imagesEnabled = mmprojPath != nil
+        config.imagesEnabled = (images ?? true) && mmprojPath != nil
+        if let contextSize { config.contextSize = contextSize }
         Task { await relaunch() }
     }
 

@@ -120,6 +120,15 @@ struct ModelMenu: View {
         let server = store.server
         let busy = store.isGenerating || store.tests.isRunning
         Menu {
+            Section("Kullanım modu") {
+                ForEach(LabStore.UseMode.allCases) { mode in
+                    Button { store.activate(mode) } label: {
+                        Label("\(mode.title) — \(store.detail(for: mode))",
+                              systemImage: store.currentUseMode == mode ? "checkmark" : mode.symbol)
+                    }
+                    .disabled(busy || server.isBusy || store.model(for: mode) == nil)
+                }
+            }
             Section("Bu Mac'teki modeller") {
                 ForEach(store.library.models) { m in
                     Button { store.load(m) } label: {
@@ -210,6 +219,7 @@ struct PresetMenu: View {
                 }
             }
             Divider()
+            Text("Her modelde son seçtiğin ön ayar hatırlanır")
             Button(store.showReasoning ? "Düşünmeyi gizle" : "Düşünmeyi göster", systemImage: "brain") {
                 store.showReasoning.toggle()
             }

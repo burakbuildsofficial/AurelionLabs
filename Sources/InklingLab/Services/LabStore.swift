@@ -8,11 +8,12 @@ import UniformTypeIdentifiers
 @Observable
 final class LabStore {
     enum Mode: String, CaseIterable, Identifiable {
-        case chat, compare, tests, settings
+        case chat, documents, compare, tests, settings
         var id: String { rawValue }
         var title: String {
             switch self {
             case .chat: "Yeni sohbet"
+            case .documents: "Belgeler"
             case .compare: "Karşılaştır"
             case .tests: "Testler"
             case .settings: "Ayarlar"
@@ -21,6 +22,7 @@ final class LabStore {
         var symbol: String {
             switch self {
             case .chat: "square.and.pencil"
+            case .documents: "doc.on.doc"
             case .compare: "rectangle.split.2x1"
             case .tests: "checkmark.seal"
             case .settings: "gearshape"
@@ -30,6 +32,7 @@ final class LabStore {
 
     let server: ServerManager
     let tests: TestRunner
+    let documents: DocumentWorkspace
 
     let library = ModelLibrary()
 
@@ -52,6 +55,23 @@ final class LabStore {
     private(set) var isGenerating = false
     private var generation: Task<Void, Never>?
 
+    // Ajan (araçlar)
+    var toolsEnabled = UserDefaults.standard.bool(forKey: "toolsEnabled") {
+        didSet { UserDefaults.standard.set(toolsEnabled, forKey: "toolsEnabled") }
+    }
+    var agentFolder: URL? = UserDefaults.standard.string(forKey: "agentFolder").map { URL(fileURLWithPath: $0) } {
+        didSet { UserDefaults.standard.set(agentFolder?.path, forKey: "agentFolder") }
+    }
+    struct Approval: Identifiable {
+        let id = UUID()
+        let call: ToolCallRecord
+        let summary: String
+        let resume: (Bool) -> Void
+    }
+    private(set) var pendingApproval: Approval?
+    private(set) var agentStep: String?
+    static let maxAgentSteps = 8
+
     // Sohbet geçmişi
     private(set) var conversations: [Conversation] = []
     private(set) var currentID: Conversation.ID?
@@ -72,6 +92,7 @@ final class LabStore {
     init(server: ServerManager) {
         self.server = server
         self.tests = TestRunner(server: server)
+        self.documents = DocumentWorkspace(server: server)
         loadPresets()
         loadConversations()
         if let data = UserDefaults.standard.data(forKey: "params"),
@@ -101,7 +122,7 @@ final class LabStore {
         draftDocuments = []
         messages.append(user)
         saveCurrent()
-        runAssistant()
+        if toolsEnabled { runAgent() } else { runAssistant() }
     }
 
     /// Taslaktaki dosyaların bağlamın ne kadarını dolduracağı (0…1+).
@@ -133,10 +154,11 @@ final class LabStore {
     func regenerateLast() {
         guard !isGenerating, let last = messages.last, last.role == .assistant else { return }
         messages.removeLast()
-        runAssistant()
+        if toolsEnabled { runAgent() } else { runAssistant() }
     }
 
     func stop() {
+        resolveApproval(false)
         generation?.cancel()
         compareTask?.cancel()
     }
@@ -192,9 +214,95 @@ final class LabStore {
 
     var currentModel: ModelLibrary.Model? { library.model(at: server.config.modelPath) }
 
-    func load(_ m: ModelLibrary.Model) {
+    func load(_ m: ModelLibrary.Model, contextSize: Int? = nil, images: Bool? = nil) {
         guard !isGenerating, !tests.isRunning else { return }
-        server.load(modelPath: m.path, mmprojPath: m.mmproj)
+        server.load(modelPath: m.path, mmprojPath: m.mmproj, contextSize: contextSize, images: images)
+        restorePreset(for: m.path)
+    }
+
+    // MARK: Kullanım modları (tek tıkla model + bağlam + resim)
+
+    enum UseMode: String, CaseIterable, Identifiable {
+        case fast, general, long
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .fast: "Hızlı sohbet"
+            case .general: "Genel"
+            case .long: "Uzun metin"
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .fast: "bolt.fill"
+            case .general: "photo"
+            case .long: "doc.text"
+            }
+        }
+    }
+
+    /// Bu Mac'teki modellerden moda en uygun olanı: hızlıda Atomic (AD) dosyası, diğerlerinde en küçük llama.cpp modeli.
+    func model(for mode: UseMode) -> ModelLibrary.Model? {
+        let plain = library.models.filter { !$0.fileName.contains("-AD-") }.sorted { $0.bytes < $1.bytes }
+        switch mode {
+        case .fast: return library.models.first { $0.fileName.contains("-AD-") } ?? plain.first
+        case .general: return plain.first { $0.mmproj != nil } ?? plain.first
+        case .long: return plain.first
+        }
+    }
+
+    func detail(for mode: UseMode) -> String {
+        guard let m = model(for: mode) else { return "Uygun model yok" }
+        let q = m.quant.isEmpty ? m.fileName : m.quant
+        switch mode {
+        case .fast: return m.fileName.contains("-AD-") ? "\(q) · Atomic · 4K · resim yok" : "\(q) · 16K"
+        case .general: return "\(q) · 16K" + (m.mmproj != nil ? " · resim okur" : "")
+        case .long: return "\(q) · 32K · resim kapalı"
+        }
+    }
+
+    func activate(_ mode: UseMode) {
+        guard let m = model(for: mode) else { return }
+        switch mode {
+        case .fast: load(m, contextSize: 16384, images: true)
+        case .general: load(m, contextSize: 16384, images: true)
+        case .long: load(m, contextSize: 32768, images: false)
+        }
+    }
+
+    /// Şu an açık ayarın hangi moda karşılık geldiği (menüde işaret için).
+    var currentUseMode: UseMode? {
+        let c = server.config
+        for mode in UseMode.allCases {
+            guard let m = model(for: mode), m.path == c.modelPath else { continue }
+            switch mode {
+            case .fast where c.usesAtomic: return .fast
+            case .long where c.contextSize >= 32768 && !c.imagesEnabled: return .long
+            case .general where c.contextSize < 32768: return .general
+            default: continue
+            }
+        }
+        return nil
+    }
+
+    // MARK: Modele göre ön ayar
+
+    /// Model yolu → son kullanılan ön ayarın adı (hazır ön ayarların kimliği her açılışta yenilenir). Model değişince o modelin ön ayarı geri gelir.
+    private var modelPresets: [String: String] {
+        get { UserDefaults.standard.dictionary(forKey: "modelPresets") as? [String: String] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "modelPresets") }
+    }
+
+    private func restorePreset(for path: String) {
+        guard let name = modelPresets[path], let p = presets.first(where: { $0.name == name }) else { return }
+        activePresetID = p.id
+        params = p.params
+    }
+
+    /// Ön ayarı bu model için hatırlanan ön ayar yapar.
+    var rememberedPresetName: String? {
+        guard let name = modelPresets[server.config.modelPath] else { return nil }
+        return presets.contains { $0.name == name } ? name : nil
     }
 
     func rename(_ c: Conversation, to title: String) {
@@ -299,11 +407,113 @@ final class LabStore {
         }
     }
 
+    // MARK: Ajan döngüsü
+
+    /// Model araç istedikçe çalıştırıp sonucu geri verir; araç istemeyen ilk cevap son cevaptır.
+    private func runAgent() {
+        isGenerating = true
+        agentStep = "Düşünüyor…"
+        let convID = currentID
+        let p = params
+        let client = LLMClient(baseURL: server.baseURL)
+        let folder = agentFolder
+        let tools = AgentTools.definitions(hasFolder: folder != nil)
+        let ctx = server.runningConfig?.contextSize ?? server.config.contextSize
+        let maxChars = max(1500, min(20_000, Int(Double(ctx) * 3.3 * 0.35)))
+
+        generation = Task { [weak self] in
+            guard let self else { return }
+            var finished = false
+            do {
+                for step in 1...Self.maxAgentSteps {
+                    try Task.checkCancellation()
+                    guard self.currentID == convID else { break }
+                    self.agentStep = step == 1 ? "Düşünüyor…" : "Adım \(step): sonuçlara bakıyor…"
+                    let r = try await client.complete(messages: self.messages, params: p, toolsJSON: tools)
+                    guard self.currentID == convID else { break }
+                    if r.toolCalls.isEmpty {
+                        var reply = ChatMessage(role: .assistant, text: r.content.trimmingCharacters(in: .whitespacesAndNewlines))
+                        reply.reasoning = r.reasoning
+                        reply.stats = r.stats
+                        reply.presetName = self.paramsModified ? nil : self.activePreset?.name
+                        if reply.text.isEmpty { reply.error = "Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır." }
+                        self.messages.append(reply)
+                        finished = true
+                        break
+                    }
+                    let calls = r.toolCalls.map { ToolCallRecord(id: $0.id, name: $0.name, arguments: $0.arguments) }
+                    var ask = ChatMessage(role: .assistant, text: r.content.trimmingCharacters(in: .whitespacesAndNewlines))
+                    ask.reasoning = r.reasoning
+                    ask.toolCalls = calls
+                    ask.stats = r.stats
+                    self.messages.append(ask)
+                    for call in calls {
+                        try Task.checkCancellation()
+                        var result: AgentTools.Outcome
+                        if AgentTools.risk(of: call.name) == .needsApproval {
+                            self.agentStep = "Onayını bekliyor: \(call.name)"
+                            let ok = await self.requestApproval(call)
+                            result = ok ? AgentTools.Outcome(text: "", ok: true) : AgentTools.Outcome(text: "Kullanıcı bu işlemi reddetti.", ok: false)
+                            if ok {
+                                self.agentStep = "\(call.name) çalışıyor"
+                                result = await AgentTools.run(call, folder: folder, maxChars: maxChars)
+                            }
+                        } else {
+                            self.agentStep = "\(call.name) çalışıyor"
+                            result = await AgentTools.run(call, folder: folder, maxChars: maxChars)
+                        }
+                        var t = ChatMessage(role: .tool, text: result.text)
+                        t.toolCallID = call.id
+                        t.toolName = call.name
+                        self.messages.append(t)
+                    }
+                    self.saveCurrent()
+                }
+                if !finished && self.currentID == convID {
+                    var m = ChatMessage(role: .assistant, text: "")
+                    m.error = "\(Self.maxAgentSteps) adımda bitiremedim. Görevi daha küçük parçalara bölüp tekrar dene."
+                    self.messages.append(m)
+                }
+            } catch is CancellationError {
+            } catch let e as URLError where e.code == .cancelled {
+            } catch {
+                var m = ChatMessage(role: .assistant, text: "")
+                m.error = Self.describe(error)
+                self.messages.append(m)
+            }
+            self.agentStep = nil
+            self.isGenerating = false
+            self.saveCurrent()
+        }
+    }
+
+    private func requestApproval(_ call: ToolCallRecord) async -> Bool {
+        await withCheckedContinuation { cont in
+            pendingApproval = Approval(call: call, summary: AgentTools.summary(call)) { cont.resume(returning: $0) }
+        }
+    }
+
+    func resolveApproval(_ ok: Bool) {
+        guard let a = pendingApproval else { return }
+        pendingApproval = nil
+        a.resume(ok)
+    }
+
+    func chooseAgentFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.prompt = "Seç"
+        panel.message = "Modelin okuyup yazabileceği çalışma klasörünü seç. Model bu klasörün dışına çıkamaz."
+        if panel.runModal() == .OK, let url = panel.url { agentFolder = url }
+    }
+
     // MARK: Ön ayarlar
 
     func apply(_ preset: Preset) {
         activePresetID = preset.id
         params = preset.params
+        modelPresets[server.config.modelPath] = preset.name
     }
 
     func saveCurrentAsPreset(named name: String) {

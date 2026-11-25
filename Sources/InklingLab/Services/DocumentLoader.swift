@@ -23,6 +23,21 @@ enum DocumentLoader {
         return UTType(filenameExtension: ext)?.conforms(to: .text) ?? false
     }
 
+    /// Dosyanın tam metni (belge asistanı için, üst sınır yüksek).
+    static func loadText(_ url: URL, maxChars: Int) -> String? {
+        let ext = url.pathExtension.lowercased()
+        var text: String?
+        if ext == "pdf" {
+            text = PDFDocument(url: url)?.string
+        } else if ext == "rtf" {
+            text = (try? NSAttributedString(url: url, options: [:], documentAttributes: nil))?.string
+        } else if canLoad(url) {
+            text = (try? String(contentsOf: url, encoding: .utf8)) ?? (try? String(contentsOf: url, encoding: .isoLatin1))
+        }
+        guard let body = text?.trimmingCharacters(in: .whitespacesAndNewlines), !body.isEmpty else { return nil }
+        return body.count > maxChars ? String(body.prefix(maxChars)) : body
+    }
+
     static func load(_ url: URL) -> DocumentAttachment? {
         let ext = url.pathExtension.lowercased()
         var text: String?
