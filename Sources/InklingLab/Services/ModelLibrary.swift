@@ -60,7 +60,7 @@ final class ModelLibrary {
                 guard url.pathExtension.lowercased() == "gguf" else { continue }
                 let name = url.deletingPathExtension().lastPathComponent
                 let lower = name.lowercased()
-                if lower.hasPrefix("mmproj") || lower.contains("dspark") || lower.hasPrefix("draft") { continue }
+                if lower.contains("mmproj") || lower.contains("dspark") || lower.hasPrefix("draft") { continue }
                 // Parçalı dosyalarda (…-00001-of-00003) yalnız ilk parça listelenir.
                 var bytes = Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
                 if let r = name.range(of: #"-(\d{5})-of-(\d{5})$"#, options: .regularExpression) {
@@ -99,7 +99,7 @@ final class ModelLibrary {
 
     private static func mmproj(in dir: URL) -> String? {
         let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
-        let projs = files.filter { $0.lastPathComponent.lowercased().hasPrefix("mmproj") && $0.pathExtension == "gguf" }
+        let projs = files.filter { $0.lastPathComponent.lowercased().contains("mmproj") && $0.pathExtension == "gguf" }
         // Önce F16 (kalite), yoksa ilk bulunan.
         return (projs.first { $0.lastPathComponent.contains("F16") } ?? projs.first)?.path
     }

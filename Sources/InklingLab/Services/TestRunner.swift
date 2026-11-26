@@ -40,6 +40,8 @@ final class TestRunner {
     private(set) var history: [RunSummary] = []
     var params = SamplingParams.recommended
     var presetName = "Önerilen"
+    /// Uzun düşünen modeller için: her testin çıktı sınırı en az bu kadar olur (0 = testin kendi sınırı).
+    var minTokens = 0
     private var task: Task<Void, Never>?
 
     init(server: ServerManager) {
@@ -103,7 +105,7 @@ final class TestRunner {
         currentID = t.id
         results[t.id] = Result(id: t.id, status: .running)
         var p = base
-        p.maxTokens = t.maxTokens
+        p.maxTokens = max(t.maxTokens, minTokens)
         var images: [ImageAttachment] = []
         if let make = t.image, let img = make(), let att = ImageLoader.attachment(from: img) { images = [att] }
         if t.image != nil && images.isEmpty {
@@ -114,6 +116,10 @@ final class TestRunner {
         if t.image != nil && !server.imagesAvailable {
             results[t.id]?.status = .error
             results[t.id]?.error = "Resim desteği kapalı. Sunucu bölümünden açıp yeniden başlat."
+            return
+        }
+        if let files = t.agentFiles {
+            await executeAgent(t, files: files, client: client, params: p)
             return
         }
         let msg = ChatMessage(role: .user, text: t.prompt, images: images)
@@ -136,6 +142,98 @@ final class TestRunner {
         } catch {
             results[t.id]?.status = .error
             results[t.id]?.error = error.localizedDescription
+        }
+    }
+
+    // MARK: Ajan testi
+
+    static let agentMaxSteps = 8
+
+    /// Uygulamadaki ajan döngüsünün aynısı, ama geçici klasörde ve onaysız: dosya yazma serbest (klasör testin),
+    /// komut çalıştırma kapalı, Beyin araçları sahte cevap verir (gerçek kasaya yazılmaz).
+    private func executeAgent(_ t: TestCase, files: [String: String], client: LLMClient, params: SamplingParams) async {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("inklinglab-test-\(t.id)-\(UUID().uuidString.prefix(6))", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        do {
+            for (path, text) in files {
+                let u = folder.appendingPathComponent(path)
+                try FileManager.default.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try text.write(to: u, atomically: true, encoding: .utf8)
+            }
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        } catch {
+            results[t.id]?.status = .error; results[t.id]?.error = "Test klasörü kurulamadı: \(error.localizedDescription)"; return
+        }
+        let ctx = server.runningConfig?.contextSize ?? server.config.contextSize
+        let maxChars = max(1500, min(20_000, Int(Double(ctx) * 3.3 * 0.35)))
+        let tools = AgentTools.definitions(hasFolder: true, hasBrain: true)
+        var messages = [ChatMessage(role: .user, text: t.prompt)]
+        var all: [LLMClient.ToolCall] = []
+        var total = GenStats()
+        var decodeSeconds = 0.0
+        var repairs = 0
+        var final = ""
+        var reasoning = ""
+        do {
+            for _ in 1...Self.agentMaxSteps {
+                let r = try await client.complete(messages: messages, params: params, toolsJSON: tools)
+                total.generatedTokens += r.stats.generatedTokens
+                total.totalSeconds += r.stats.totalSeconds
+                if r.stats.generatedPerSecond > 0 { decodeSeconds += Double(r.stats.generatedTokens) / r.stats.generatedPerSecond }
+                reasoning += r.reasoning
+                if r.toolCalls.isEmpty { final = r.content; break }
+                all += r.toolCalls
+                var ask = ChatMessage(role: .assistant, text: r.content)
+                ask.toolCalls = r.toolCalls.map { ToolCallRecord(id: $0.id, name: $0.name, arguments: $0.arguments) }
+                messages.append(ask)
+                let schema = ToolRepair.schema(tools)
+                for var c in ask.toolCalls! {
+                    let out: String
+                    if let problem = ToolRepair.check(&c, schema: schema) { out = problem; repairs += 1 }
+                    else { out = await Self.testTool(c, folder: folder, maxChars: maxChars) }
+                    var m = ChatMessage(role: .tool, text: out)
+                    m.toolCallID = c.id; m.toolName = c.name
+                    messages.append(m)
+                }
+            }
+            if decodeSeconds > 0 { total.generatedPerSecond = Double(total.generatedTokens) / decodeSeconds }
+            let verdict = await t.check(TestOutput(content: final, toolCalls: all, allCalls: all, folder: folder))
+            var res = Result(id: t.id, answer: final, reasoning: reasoning, toolCalls: all, stats: total)
+            res.verdict = final.isEmpty && !verdict.passed
+                ? Verdict(passed: false, detail: verdict.detail + " (\(Self.agentMaxSteps) adımda son cevap gelmedi)") : verdict
+            if repairs > 0 { res.verdict = Verdict(passed: res.verdict!.passed, detail: res.verdict!.detail + " · \(repairs) bozuk çağrı geri çevrildi") }
+            res.status = verdict.passed ? .passed : .failed
+            results[t.id] = res
+        } catch is CancellationError {
+            results[t.id] = Result(id: t.id)
+        } catch let e as URLError where e.code == .cancelled {
+            results[t.id] = Result(id: t.id)
+        } catch {
+            results[t.id]?.status = .error
+            results[t.id]?.error = error.localizedDescription
+        }
+    }
+
+    private static func testTool(_ c: ToolCallRecord, folder: URL, maxChars: Int) async -> String {
+        let a = AgentTools.args(c.arguments)
+        switch c.name {
+        case "komut_calistir":
+            return "Testte komut çalıştırma kapalı. Dosya araçlarıyla devam et."
+        case "beyin_baglam":
+            return "Kullanıcı: yapay zeka videoları ve yerel model denemeleri. Son iş: Inkling Lab."
+        case "beyin_ara":
+            return "• Inkling Lab — Projeler/inkling-lab.md\n  16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
+        case "beyin_oku":
+            return "# Inkling Lab\n16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
+        case "beyin_kaydet":
+            return "Kaydedildi: Projeler/\(a["baslik"] ?? "not").md (test, kasaya yazılmadı)"
+        case "x_tarzi":
+            return "Türkçe flood, her tweet ≤280, rakamlar ölçümden."
+        case "x_taslak_koy":
+            return "Kuyruğa kondu (test, kaydedilmedi)."
+        default:
+            return await AgentTools.run(c, folder: folder, maxChars: maxChars).text
         }
     }
 

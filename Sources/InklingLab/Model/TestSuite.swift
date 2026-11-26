@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Sınır testleri: her testin istemi, isteğe bağlı resmi/araçları ve otomatik kontrolü var.
 enum TestCategory: String, CaseIterable, Identifiable, Codable {
-    case reasoning, instructions, turkish, code, vision, tools, longContext
+    case reasoning, instructions, turkish, code, vision, tools, agent, longContext
     var id: String { rawValue }
 
     var title: String {
@@ -13,6 +13,7 @@ enum TestCategory: String, CaseIterable, Identifiable, Codable {
         case .code: "Kod"
         case .vision: "Görsel"
         case .tools: "Araç kullanma"
+        case .agent: "Ajan (çok adımlı)"
         case .longContext: "Uzun bağlam"
         }
     }
@@ -25,6 +26,7 @@ enum TestCategory: String, CaseIterable, Identifiable, Codable {
         case .code: "chevron.left.forwardslash.chevron.right"
         case .vision: "eye"
         case .tools: "wrench.and.screwdriver"
+        case .agent: "point.3.connected.trianglepath.dotted"
         case .longContext: "doc.text.magnifyingglass"
         }
     }
@@ -39,6 +41,9 @@ struct Verdict: Equatable {
 struct TestOutput {
     let content: String
     let toolCalls: [LLMClient.ToolCall]
+    /// Ajan testlerinde: bütün adımlardaki araç çağrıları ve testin geçici çalışma klasörü.
+    var allCalls: [LLMClient.ToolCall] = []
+    var folder: URL? = nil
 }
 
 struct TestCase: Identifiable {
@@ -48,6 +53,8 @@ struct TestCase: Identifiable {
     let prompt: String
     var image: (@MainActor () -> NSImage?)?
     var usesTools = false
+    /// Doluysa ajan testi: bu dosyalar geçici bir çalışma klasörüne yazılır, model gerçek araçlarla çok adımlı çalışır.
+    var agentFiles: [String: String]? = nil
     var maxTokens = 3072
     /// Kontrol async olabilir (kod çalıştırma).
     let check: @Sendable (TestOutput) async -> Verdict
@@ -150,6 +157,22 @@ enum Checks {
                 ? Verdict(passed: true, detail: "\(name)(\(call.arguments)) çağırdı.")
                 : Verdict(passed: false, detail: "\(name) çağırdı ama argüman eksik: \(call.arguments)")
         }
+    }
+
+    /// Ajan testi: belirtilen aracı (adı önekle eşleşebilir) herhangi bir adımda, argümanında ifadelerle çağırdı mı.
+    static func called(_ out: TestOutput, _ name: String, argsContain: [String] = []) -> Bool {
+        out.allCalls.contains { c in
+            c.name == name && argsContain.allSatisfy { norm(c.arguments).contains(norm($0)) }
+        }
+    }
+
+    static func callList(_ out: TestOutput) -> String {
+        out.allCalls.isEmpty ? "hiç araç çağırmadı" : out.allCalls.map(\.name).joined(separator: " → ")
+    }
+
+    static func fileText(_ out: TestOutput, _ path: String) -> String? {
+        guard let f = out.folder else { return nil }
+        return try? String(contentsOf: f.appendingPathComponent(path), encoding: .utf8)
     }
 }
 
@@ -303,6 +326,67 @@ enum TestSuite {
                               Verdict(passed: out.toolCalls.isEmpty && !out.content.isEmpty,
                                       detail: out.toolCalls.isEmpty ? "Araç çağırmadan cevap verdi."
                                       : "Gereksiz yere \(out.toolCalls.map(\.name).joined(separator: ", ")) çağırdı.")
+                          }))
+
+        // Ajan (çok adımlı): gerçek araçlar, geçici klasör. Beyin araçları testte sahte cevap verir, kasaya yazılmaz.
+        t.append(TestCase(id: "g1", category: .agent, title: "Dosyadan bilgi bulma",
+                          prompt: "Çalışma klasöründeki notlar.txt dosyasında toplantı kodu yazıyor. Kod nedir? Sadece kodu yaz.",
+                          agentFiles: ["notlar.txt": "Alışveriş: süt, ekmek\nToplantı kodu: KESTANE-42\nAra: Mehmet"],
+                          maxTokens: 4096, check: { out in
+                              let ok = Checks.called(out, "dosya_oku") && Checks.norm(out.content).contains("kestane-42")
+                              return Verdict(passed: ok, detail: ok ? "Dosyayı okudu, kodu buldu." : "Adımlar: \(Checks.callList(out)).")
+                          }))
+        t.append(TestCase(id: "g2", category: .agent, title: "Klasörde dosya arama",
+                          prompt: "Çalışma klasöründe projenin ayar dosyası bir yerde duruyor. Bul ve hangi portu kullandığını söyle. Son satırda sadece port numarasını yaz.",
+                          agentFiles: ["README.md": "Deneme projesi.", "kaynak/main.py": "print('merhaba')",
+                                       "kaynak/ayarlar/sunucu.json": "{\"host\": \"127.0.0.1\", \"port\": 8123}"],
+                          maxTokens: 4096, check: { out in
+                              let ok = Checks.called(out, "dosya_oku", argsContain: ["sunucu.json"]) && out.content.contains("8123")
+                              return Verdict(passed: ok, detail: ok ? "Klasörü gezip ayar dosyasını buldu." : "Adımlar: \(Checks.callList(out)).")
+                          }))
+        t.append(TestCase(id: "g3", category: .agent, title: "Oku, hesapla, yaz",
+                          prompt: "satislar.csv dosyasındaki adet sütununun toplamını bul ve sonucu toplam.txt dosyasına sadece sayı olarak yaz.",
+                          agentFiles: ["satislar.csv": "urun,adet\nkalem,17\ndefter,42\nsilgi,8\ncetvel,25\n"],
+                          maxTokens: 4096, check: { out in
+                              let f = Checks.fileText(out, "toplam.txt")?.trimmingCharacters(in: .whitespacesAndNewlines)
+                              return Verdict(passed: f == "92", detail: f == nil ? "toplam.txt yazılmadı. Adımlar: \(Checks.callList(out))."
+                                             : f == "92" ? "toplam.txt = 92." : "toplam.txt içeriği \"\(f!.prefix(40))\", beklenen 92.")
+                          }))
+        t.append(TestCase(id: "g4", category: .agent, title: "Dosya düzenleme",
+                          prompt: "ayar.txt dosyasında tema satırını koyu olarak değiştir. Diğer satırlara dokunma.",
+                          agentFiles: ["ayar.txt": "dil=tr\ntema=acik\nboyut=14\n"],
+                          maxTokens: 4096, check: { out in
+                              let f = Checks.fileText(out, "ayar.txt") ?? ""
+                              let lines = f.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+                              let ok = lines.contains("tema=koyu") && lines.contains("dil=tr") && lines.contains("boyut=14") && lines.count == 3
+                              return Verdict(passed: ok, detail: ok ? "Yalnız tema satırını değiştirdi." : "ayar.txt: \(f.replacingOccurrences(of: "\n", with: " ⏎ "))")
+                          }))
+        t.append(TestCase(id: "g5", category: .agent, title: "Adı verilen beceriyi kullanma",
+                          prompt: "scrapling-official becerisinin talimatına bak: bir web sayfasını Markdown dosyasına kaydetmek için hangi komutu, hangi zorunlu seçenekle kullanmalıyım? Tek satır komut yaz.",
+                          agentFiles: [:], maxTokens: 6144, check: { out in
+                              let used = Checks.called(out, "beceri_oku", argsContain: ["scrapling"])
+                              let ok = used && Checks.norm(out.content).contains("--ai-targeted")
+                              return Verdict(passed: ok, detail: !used ? "Beceriyi açmadı. Adımlar: \(Checks.callList(out))."
+                                             : ok ? "Beceriyi okudu, zorunlu --ai-targeted seçeneğini buldu." : "Beceriyi okudu ama --ai-targeted yok.")
+                          }))
+        t.append(TestCase(id: "g6", category: .agent, title: "Uygun beceriyi kendi seçme",
+                          prompt: "Three.js sahnemde gölgelerde çizgili lekeler (shadow acne) çıkıyor. Kurulu becerilerden uygun olanına bakarak nasıl düzelteceğimi kısaca söyle.",
+                          agentFiles: [:], maxTokens: 6144, check: { out in
+                              let ok = Checks.called(out, "beceri_oku", argsContain: ["threejs-lighting"]) && Checks.norm(out.content).contains("bias")
+                              return Verdict(passed: ok, detail: ok ? "threejs-lighting becerisini seçti, bias ayarını söyledi." : "Adımlar: \(Checks.callList(out)).")
+                          }))
+        t.append(TestCase(id: "g7", category: .agent, title: "Beyin'den hatırlama",
+                          prompt: "Inkling IQ3_XXS modeli 16K bağlamda testlerde kaç puan almıştı? Benim notlarıma bak.",
+                          agentFiles: [:], maxTokens: 4096, check: { out in
+                              let ok = Checks.called(out, "beyin_ara") && out.content.contains("25/27")
+                              return Verdict(passed: ok, detail: ok ? "Beyin'de aradı, 25/27'yi buldu." : "Adımlar: \(Checks.callList(out)).")
+                          }))
+        t.append(TestCase(id: "g8", category: .agent, title: "Beyin'e kaydetme",
+                          prompt: "Bugün Bonsai 2.5 27B modelini indirdim, Q2_0 dosyası 7,67 GB. Bunu notlarıma proje olarak kaydet.",
+                          agentFiles: [:], maxTokens: 4096, check: { out in
+                              let ok = Checks.called(out, "beyin_kaydet", argsContain: ["bonsai", "7,67"])
+                                  || Checks.called(out, "beyin_kaydet", argsContain: ["bonsai", "7.67"])
+                              return Verdict(passed: ok, detail: ok ? "beyin_kaydet ile rakamıyla kaydetti." : "Adımlar: \(Checks.callList(out)).")
                           }))
 
         // Uzun bağlam: samanlıkta iğne

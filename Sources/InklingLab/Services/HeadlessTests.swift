@@ -32,9 +32,27 @@ enum HeadlessTests {
         let runner = store.tests
         runner.params = store.activePreset?.params ?? .recommended
         runner.presetName = store.activePreset?.name ?? "Önerilen"
+        // --preset <ad>: hazır ön ayarla çalıştır (ör. Bonsai). --min-tokens <n>: her testin çıktı sınırı en az n.
+        if let i = args.firstIndex(of: "--preset"), i + 1 < args.count,
+           let pr = store.presets.first(where: { $0.name == args[i + 1] }) {
+            runner.params = pr.params; runner.presetName = pr.name
+        }
+        if let i = args.firstIndex(of: "--min-tokens"), i + 1 < args.count, let n = Int(args[i + 1]) { runner.minTokens = n }
+        print("ÖN AYAR: \(runner.presetName) · sıcaklık \(runner.params.temperature) top-p \(runner.params.topP) top-k \(runner.params.topK) · en az \(runner.minTokens) token")
         runner.runAll(only: only)
         print("MODEL: \(store.server.modelName) · bağlam \(store.server.runningConfig?.contextSize ?? store.server.config.contextSize)")
-        while runner.isRunning { try? await Task.sleep(for: .milliseconds(300)) }
+        // Her test bitince kısa bir ilerleme satırı (uzun ölçümlerde nerede olduğu görünsün).
+        var done = Set<String>()
+        let total = runner.tests.filter { only == nil || $0.category == only }.count
+        while runner.isRunning {
+            for t in runner.tests where !done.contains(t.id) {
+                guard let r = runner.results[t.id], [.passed, .failed, .error].contains(r.status) else { continue }
+                done.insert(t.id)
+                print("… \(done.count)/\(total) \(r.status == .passed ? "✓" : "✗") \(t.title)")
+                fflush(stdout)
+            }
+            try? await Task.sleep(for: .milliseconds(300))
+        }
 
         for t in runner.tests where only == nil || t.category == only {
             guard let r = runner.results[t.id] else { continue }

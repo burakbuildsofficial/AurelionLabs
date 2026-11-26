@@ -452,7 +452,7 @@ struct ToolsToggle: View {
         Menu {
             Toggle("Araçları kullan (ajan modu)", isOn: Binding(get: { store.toolsEnabled }, set: { store.toolsEnabled = $0 }))
             Divider()
-            Text(store.agentFolder.map { "Çalışma klasörü: \($0.lastPathComponent)" } ?? "Çalışma klasörü yok: yalnız hesap ve saat")
+            Text(store.agentFolder.map { "Çalışma klasörü: \($0.lastPathComponent)" } ?? "Çalışma klasörü yok: hesap, saat, beceriler ve Beyin")
             Button("Çalışma klasörü seç…", systemImage: "folder") { store.chooseAgentFolder() }
             if store.agentFolder != nil {
                 Button("Klasörü kaldır", systemImage: "folder.badge.minus") { store.agentFolder = nil }

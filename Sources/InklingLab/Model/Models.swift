@@ -28,6 +28,11 @@ struct Preset: Codable, Identifiable, Equatable, Hashable {
                params: SamplingParams(temperature: 0.3, topP: 0.95, topK: 0, minP: 0.05, maxTokens: 8192,
                                       systemPrompt: "Deneyimli bir yazılımcısın. Çalışan, açıklamalı kod ver; gereksiz laf etme."),
                builtIn: true),
+        // Bonsai 2.5 model kartı: sıcaklık 1.0, top-p 0.95, top-k 20; uzun düşündüğü için çıktı sınırı en az 16K.
+        Preset(name: "Bonsai",
+               params: SamplingParams(temperature: 1.0, topP: 0.95, topK: 20, minP: 0.0, maxTokens: 16384,
+                                      systemPrompt: ""),
+               builtIn: true),
         Preset(name: "Yaratıcı",
                params: SamplingParams(temperature: 1.3, topP: 1.0, topK: 0, minP: 0.02, maxTokens: 4096,
                                       systemPrompt: ""),

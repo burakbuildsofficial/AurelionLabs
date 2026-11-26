@@ -12,12 +12,41 @@ enum AgentTools {
     }
 
     /// OpenAI biçiminde araç tanımları. Çalışma klasörü yoksa dosya/komut araçları verilmez.
-    static func definitions(hasFolder: Bool) -> Data {
+    static func definitions(hasFolder: Bool, hasBrain: Bool = false) -> Data {
         var tools: [[String: Any]] = [
             fn("hesapla", "Matematik ifadesini kesin hesaplar. + - * / % ^ ve parantez destekler.",
                ["ifade": "Hesaplanacak ifade, ör. (48271*9133+17)/3"], required: ["ifade"]),
             fn("simdiki_zaman", "Bu Mac'teki güncel tarih, gün ve saati verir.", [:], required: []),
         ]
+        if hasBrain {
+            tools += [
+                fn("beyin_baglam", "Kullanıcının Beyin'inden özet: kim olduğu, son günlerin işleri, açık görevler. Sohbetin başında bir kez çağır.",
+                   [:], required: []),
+                fn("beyin_ara", "Kullanıcının Beyin'inde (notlar, kararlar, projeler, video stili) anlamca arar. Bir şeyi hatırlaman gerekince önce bunu kullan.",
+                   ["sorgu": "Aranacak konu", "klasor": "İsteğe bağlı: Kararlar, Projeler, Notlar, Video, Gorevler…"], required: ["sorgu"]),
+                fn("beyin_oku", "Beyin'deki bir notun tamamını okur.", ["yol": "Notun yolu, ör. Kararlar/x.md"], required: ["yol"]),
+                fn("beyin_kaydet", "Kalıcı bilgiyi Beyin'e yazar: biten iş, karar, ölçüm sonucu, ders. Sohbetin tamamını değil özünü yaz.",
+                   ["baslik": "Kısa başlık", "icerik": "Öz bilgi; rakamlar ölçümden",
+                    "tur": "not | karar | gorev | kaynak | ders | kisi | proje", "etiketler": "Virgülle ayrılmış, ör. inkling,x-paylasim"],
+                   required: ["baslik", "icerik"]),
+                fn("x_tarzi", "Kullanıcının X paylaşım tarzı kuralları. X taslağı yazmadan önce oku.", [:], required: []),
+                fn("x_taslak_koy", "X flood taslağını kullanıcının onay kuyruğuna koyar; GÖNDERMEZ, gönderimi kullanıcı yapar. "
+                   + "Rakamları yalnız Beyin notlarından al.",
+                   ["baslik": "Taslağın konusu",
+                    "tweetler": "Tweetler sırayla; aralarına tek başına bir satırda ---tweet--- koy. Her biri en fazla 280 karakter.",
+                    "kaynaklar": "Rakamların geldiği Beyin not yolları, virgülle ayrılmış"],
+                   required: ["baslik", "tweetler"]),
+            ]
+        }
+        let skills = SkillLibrary.all()
+        if !skills.isEmpty {
+            tools.append(fn("beceri_oku",
+                "Bir beceriyi (adım adım talimat paketi) açar. İş aşağıdaki becerilerden birine uyuyorsa önce bunu çağır, "
+                + "sonra talimatlara uy. Becerinin ek dosyaları için `dosya` ver (ör. references/x.md). Beceriler:\n"
+                + SkillLibrary.catalog(skills),
+                ["ad": "Becerinin adı, ör. hyperframes", "dosya": "İsteğe bağlı: beceri klasörüne göre göreli dosya; boşsa SKILL.md"],
+                required: ["ad"]))
+        }
         if hasFolder {
             tools += [
                 fn("dosya_listele", "Çalışma klasöründeki dosya ve klasörleri listeler.",
@@ -72,6 +101,12 @@ enum AgentTools {
             f.locale = Locale(identifier: "tr_TR")
             f.dateFormat = "d MMMM yyyy EEEE, HH:mm"
             return Outcome(text: f.string(from: Date()), ok: true)
+
+        case "beyin_baglam", "beyin_ara", "beyin_oku", "beyin_kaydet", "x_tarzi", "x_taslak_koy":
+            return await BrainClient.run(call.name, a, maxChars: maxChars)
+
+        case "beceri_oku":
+            return SkillLibrary.read(name: a["ad"] ?? "", file: a["dosya"], maxChars: maxChars)
 
         case "dosya_listele":
             guard let url = resolve(a["klasor"] ?? ".", in: folder) else { return outside }

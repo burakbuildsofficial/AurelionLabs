@@ -243,7 +243,11 @@ final class LabStore {
 
     /// Bu Mac'teki modellerden moda en uygun olanı: hızlıda Atomic (AD) dosyası, diğerlerinde en küçük llama.cpp modeli.
     func model(for mode: UseMode) -> ModelLibrary.Model? {
-        let plain = library.models.filter { !$0.fileName.contains("-AD-") }.sorted { $0.bytes < $1.bytes }
+        // Modlar şimdilik Inkling ailesinde kalır; başka bir model (ör. Bonsai) yalnız menüden seçilir.
+        // Hangi işe hangi modelin gideceği ajan testlerinin sonucuna göre ayrıca kararlaştırılacak.
+        let all = library.models.filter { !$0.fileName.contains("-AD-") }
+        let inkling = all.filter { $0.family.lowercased().contains("inkling") }
+        let plain = (inkling.isEmpty ? all : inkling).sorted { $0.bytes < $1.bytes }
         switch mode {
         case .fast: return library.models.first { $0.fileName.contains("-AD-") } ?? plain.first
         case .general: return plain.first { $0.mmproj != nil } ?? plain.first
@@ -417,13 +421,13 @@ final class LabStore {
         let p = params
         let client = LLMClient(baseURL: server.baseURL)
         let folder = agentFolder
-        let tools = AgentTools.definitions(hasFolder: folder != nil)
         let ctx = server.runningConfig?.contextSize ?? server.config.contextSize
         let maxChars = max(1500, min(20_000, Int(Double(ctx) * 3.3 * 0.35)))
 
         generation = Task { [weak self] in
             guard let self else { return }
             var finished = false
+            let tools = AgentTools.definitions(hasFolder: folder != nil, hasBrain: await BrainClient.isUp())
             do {
                 for step in 1...Self.maxAgentSteps {
                     try Task.checkCancellation()
@@ -447,10 +451,13 @@ final class LabStore {
                     ask.toolCalls = calls
                     ask.stats = r.stats
                     self.messages.append(ask)
-                    for call in calls {
+                    let schema = ToolRepair.schema(tools)
+                    for var call in calls {
                         try Task.checkCancellation()
                         var result: AgentTools.Outcome
-                        if AgentTools.risk(of: call.name) == .needsApproval {
+                        if let problem = ToolRepair.check(&call, schema: schema) {
+                            result = AgentTools.Outcome(text: problem, ok: false)
+                        } else if AgentTools.risk(of: call.name) == .needsApproval {
                             self.agentStep = "Onayını bekliyor: \(call.name)"
                             let ok = await self.requestApproval(call)
                             result = ok ? AgentTools.Outcome(text: "", ok: true) : AgentTools.Outcome(text: "Kullanıcı bu işlemi reddetti.", ok: false)

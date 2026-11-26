@@ -1,0 +1,67 @@
+ÖN AYAR: Bonsai · sıcaklık 1.0 top-p 0.95 top-k 20 · en az 12288 token
+MODEL: Ternary-Bonsai-2.5-27B-Q2_0 · bağlam 16384
+… 1/31 ✓ Bacak sayısı
+… 2/31 ✓ Denklem
+… 3/31 ✓ Saat hesabı
+… 4/31 ✓ Harf sayma
+… 5/31 ✓ Takvim
+… 6/31 ✓ Tuzaklı soru
+… 7/31 ✓ Tam 3 madde
+… 8/31 ✗ Sadece JSON
+… 9/31 ✓ Büyük harf
+… 10/31 ✓ Kelime sınırı
+… 11/31 ✗ Deyim
+… 12/31 ✗ Çeviri
+… 13/31 ✓ Ünlü uyumu
+… 14/31 ✓ Asal sayı
+… 15/31 ✓ Parantez dengesi
+… 16/31 ✓ Roma rakamı
+… 17/31 ✓ Doğru aracı seçme
+… 18/31 ✓ Hesap aracı
+… 19/31 ✓ Argüman çıkarma
+… 20/31 ✓ Gereksiz araç kullanmama
+… 21/31 ✓ Dosyadan bilgi bulma
+… 22/31 ✓ Klasörde dosya arama
+… 23/31 ✓ Oku, hesapla, yaz
+… 24/31 ✓ Dosya düzenleme
+… 25/31 ✓ Adı verilen beceriyi kullanma
+… 26/31 ✓ Uygun beceriyi kendi seçme
+… 27/31 ✓ Beyin'den hatırlama
+… 28/31 ✓ Beyin'e kaydetme
+… 29/31 ✓ Samanlıkta iğne · ~4K token
+… 30/31 ✓ Samanlıkta iğne · ~8K token
+GEÇTİ  [Mantık ve matematik] Bacak sayısı ·   7.0s  24.2 t/s · Cevapta 78 var.
+GEÇTİ  [Mantık ve matematik] Denklem ·   6.1s  24.0 t/s · Cevapta 15 var.
+GEÇTİ  [Mantık ve matematik] Saat hesabı ·   4.2s  23.6 t/s · Cevapta “18:25” var.
+GEÇTİ  [Mantık ve matematik] Harf sayma ·   7.4s  23.4 t/s · Cevapta 4 var.
+GEÇTİ  [Mantık ve matematik] Takvim ·  43.8s  23.4 t/s · Cevapta “çarşamba” var.
+GEÇTİ  [Mantık ve matematik] Tuzaklı soru ·   8.1s  23.7 t/s · Cevapta 5 var.
+GEÇTİ  [Talimata uyma] Tam 3 madde ·  26.7s  23.5 t/s · Tam 3 madde, fazladan satır yok.
+KALDI  [Talimata uyma] Sadece JSON ·   5.3s  23.8 t/s · Cevap tek başına geçerli JSON değil.
+        cevap: { ⏎   "sehir": "Ankara", ⏎   "plaka": 06, ⏎   "baskent_mi": true ⏎ }
+GEÇTİ  [Talimata uyma] Büyük harf ·   2.9s  24.4 t/s · Tam olarak ANKARA yazdı.
+GEÇTİ  [Talimata uyma] Kelime sınırı ·  11.9s  23.6 t/s · 8 kelime yazdı (en fazla 12).
+KALDI  [Türkçe] Deyim · 221.8s  21.6 t/s · Şunlardan hiçbiri yok: sevin, mutlu, neşe, keyif.
+        cevap: Eteğindeki zil çalmak, kısa boylu olmak anlamına gelir.
+KALDI  [Türkçe] Çeviri ·  32.0s  21.3 t/s · Eksik: pencere.
+        cevap: Kedi sıcak pervazda uyuyor.
+GEÇTİ  [Türkçe] Ünlü uyumu ·  15.7s  21.0 t/s · Cevapta “kitapları” var.
+GEÇTİ  [Kod] Asal sayı ·  13.6s  21.1 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Parantez dengesi ·  11.3s  20.8 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Kod] Roma rakamı ·  22.0s  20.7 t/s · Kod çalıştı, tüm testler geçti.
+GEÇTİ  [Araç kullanma] Doğru aracı seçme ·   5.2s  21.9 t/s · hava_durumu({"sehir":"İzmir"}) çağırdı.
+GEÇTİ  [Araç kullanma] Hesap aracı ·   4.9s  21.7 t/s · hesapla({"ifade":"48271*9133+17"}) çağırdı.
+GEÇTİ  [Araç kullanma] Argüman çıkarma ·  11.5s  21.0 t/s · takvime_ekle({"tarih":"2026-11-24","baslik":"Diş hekimi randevusu","saat":"15:00"}) çağırdı.
+GEÇTİ  [Araç kullanma] Gereksiz araç kullanmama ·   3.5s  21.7 t/s · Araç çağırmadan cevap verdi.
+GEÇTİ  [Ajan (çok adımlı)] Dosyadan bilgi bulma ·  18.3s  22.0 t/s · Dosyayı okudu, kodu buldu.
+GEÇTİ  [Ajan (çok adımlı)] Klasörde dosya arama ·  22.4s  21.4 t/s · Klasörü gezip ayar dosyasını buldu.
+GEÇTİ  [Ajan (çok adımlı)] Oku, hesapla, yaz ·  17.0s  21.2 t/s · toplam.txt = 92.
+GEÇTİ  [Ajan (çok adımlı)] Dosya düzenleme ·  16.9s  21.1 t/s · Yalnız tema satırını değiştirdi.
+GEÇTİ  [Ajan (çok adımlı)] Adı verilen beceriyi kullanma ·  31.6s  20.8 t/s · Beceriyi okudu, zorunlu --ai-targeted seçeneğini buldu.
+GEÇTİ  [Ajan (çok adımlı)] Uygun beceriyi kendi seçme ·  63.7s  20.1 t/s · threejs-lighting becerisini seçti, bias ayarını söyledi.
+GEÇTİ  [Ajan (çok adımlı)] Beyin'den hatırlama ·  28.4s  20.0 t/s · Beyin'de aradı, 25/27'yi buldu.
+GEÇTİ  [Ajan (çok adımlı)] Beyin'e kaydetme ·  49.0s  20.5 t/s · beyin_kaydet ile rakamıyla kaydetti.
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~4K token ·  29.0s  20.5 t/s · Beklenen ifadeler var: MAVİ-3752-KUŞ.
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~8K token ·  48.6s  20.3 t/s · Beklenen ifadeler var: MAVİ-6523-KUŞ.
+GEÇTİ  [Uzun bağlam] Samanlıkta iğne · ~12K token ·  65.5s  18.1 t/s · Beklenen ifadeler var: MAVİ-3514-KUŞ.
+TOPLAM: 28/31

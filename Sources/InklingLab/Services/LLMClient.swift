@@ -117,9 +117,15 @@ struct LLMClient {
             out.reasoning = msg["reasoning_content"] as? String ?? ""
             for call in msg["tool_calls"] as? [[String: Any]] ?? [] {
                 if let f = call["function"] as? [String: Any], let name = f["name"] as? String {
-                    out.toolCalls.append(ToolCall(id: call["id"] as? String ?? UUID().uuidString, name: name,
-                                                  arguments: f["arguments"] as? String ?? ""))
+                    // Bazı sunucular argümanı metin değil nesne olarak gönderir; ikisini de kabul et.
+                    let args = f["arguments"].map { ToolRepair.jsonString($0) } ?? ""
+                    out.toolCalls.append(ToolCall(id: call["id"] as? String ?? UUID().uuidString, name: name, arguments: args))
                 }
+            }
+            // Sunucu çağrıyı ayrıştıramayıp metne bıraktıysa metinden kurtar.
+            if out.toolCalls.isEmpty, toolsJSON != nil {
+                let r = ToolRepair.extractFromText(out.content, known: Set(ToolRepair.schema(toolsJSON).keys))
+                if !r.calls.isEmpty { out.toolCalls = r.calls; out.content = r.rest }
             }
         }
         if let t = obj["timings"] as? [String: Any] {
@@ -150,7 +156,7 @@ struct LLMClient {
             } else if let calls = m.toolCalls, !calls.isEmpty {
                 out.append(["role": "assistant", "content": m.text,
                             "tool_calls": calls.map { ["id": $0.id, "type": "function",
-                                                       "function": ["name": $0.name, "arguments": $0.arguments]] }])
+                                                       "function": ["name": $0.name, "arguments": ToolRepair.parseObject($0.arguments).map(ToolRepair.jsonString) ?? "{}"]] }])
             } else {
                 out.append(["role": m.role.rawValue, "content": m.promptText])
             }
