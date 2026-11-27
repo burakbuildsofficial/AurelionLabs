@@ -12,7 +12,7 @@ You need macOS 15+, Apple Silicon and the Swift 6 toolchain. The app does not ne
 
 ## Guidelines
 
-- User-facing text goes through `L("...")`. Write the Turkish text in the code and add its English version to `Design/Localization.swift` (interpolated values become `%@`, e.g. `L("\\(n) dosya")` → `"%@ dosya": "%@ files"`). Use `%2$@` to reorder.
+- User-facing text goes through `L("...")`. Write the Turkish text in the code and add its English version to `Design/Localization.swift` (interpolated values become `%@`, e.g. `L("\(n) dosya")` → `"%@ dosya": "%@ files"`). Use `%2$@` to reorder.
 - Keep the UI consistent: colors, fonts and spacing come from `Design/Theme.swift`. Do not hard-code values in views.
 - Swift 6 strict concurrency: UI state is `@MainActor`. Keep blocking work out of the main actor.
 - Agent tools must stay sandboxed to the working folder. Anything that writes or executes must go through the approval flow.
