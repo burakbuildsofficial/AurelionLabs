@@ -1,6 +1,6 @@
 import AppKit
 
-/// `InklingLab --run-tests [--only <kategori>]`: testleri çalıştırır, sonucu stdout'a yazar, uygulamayı kapatır.
+/// `AurelionLabs --run-tests [--only <kategori>]`: testleri çalıştırır, sonucu stdout'a yazar, uygulamayı kapatır.
 /// Sonuç ayrıca "Önceki çalıştırmalar" listesine kaydedilir (yalnız tüm testler çalıştığında).
 @MainActor
 enum HeadlessTests {

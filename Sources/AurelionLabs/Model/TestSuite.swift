@@ -111,8 +111,8 @@ enum Checks {
     /// Modelin yazdığı Python kodunu geçici klasörde, 10 sn sınırla, testlerle birlikte çalıştırır.
     static func python(tests: String) -> @Sendable (TestOutput) async -> Verdict {
         { out in
-            let code = extractCode(out.content) + "\n\n# --- Inkling Lab testleri ---\n" + tests + "\nprint('TESTLER_GECTI')\n"
-            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("inklinglab-\(UUID().uuidString)")
+            let code = extractCode(out.content) + "\n\n# --- AurelionLabs testleri ---\n" + tests + "\nprint('TESTLER_GECTI')\n"
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("aurelionlabs-\(UUID().uuidString)")
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: dir) }
             let file = dir.appendingPathComponent("cevap.py")

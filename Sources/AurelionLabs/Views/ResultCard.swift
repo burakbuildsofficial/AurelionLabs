@@ -43,7 +43,7 @@ struct ResultCard: View {
             HStack {
                 Text(hardware + " · llama.cpp · \(runs.first?.contextK ?? 16)K bağlam")
                 Spacer()
-                Text("Inkling Lab").fontWeight(.semibold).foregroundStyle(Theme.primary)
+                Text("AurelionLabs").fontWeight(.semibold).foregroundStyle(Theme.primary)
             }
             .font(.system(size: 19)).foregroundStyle(Theme.textSecondary)
         }

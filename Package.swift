@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "InklingLab",
+    name: "AurelionLabs",
     defaultLocalization: "tr",
     platforms: [.macOS(.v15)],
     targets: [
         .executableTarget(
-            name: "InklingLab",
-            path: "Sources/InklingLab"
+            name: "AurelionLabs",
+            path: "Sources/AurelionLabs"
         )
     ]
 )

@@ -101,7 +101,7 @@ final class ServerManager {
 
     private static var pidFile: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InklingLab", isDirectory: true)
+            .appendingPathComponent("AurelionLabs", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("server.pid")
     }

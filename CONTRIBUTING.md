@@ -5,7 +5,7 @@ Thanks for helping! Small PRs are great. Turkish or English is fine everywhere.
 ## Setup
 
 ```bash
-./scripts/build-app.sh && open build/InklingLab.app   # or: swift build
+./scripts/build-app.sh && open build/AurelionLabs.app   # or: swift build
 ```
 
 You need macOS 15+, Apple Silicon and the Swift 6 toolchain. The app does not need a model to build, but to try a change you need `llama-server` and one GGUF file (any small model works, it does not have to be Inkling).

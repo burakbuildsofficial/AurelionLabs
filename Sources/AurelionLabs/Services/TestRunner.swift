@@ -153,7 +153,7 @@ final class TestRunner {
     /// komut çalıştırma kapalı, Beyin araçları sahte cevap verir (gerçek kasaya yazılmaz).
     private func executeAgent(_ t: TestCase, files: [String: String], client: LLMClient, params: SamplingParams) async {
         let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("inklinglab-test-\(t.id)-\(UUID().uuidString.prefix(6))", isDirectory: true)
+            .appendingPathComponent("aurelionlabs-test-\(t.id)-\(UUID().uuidString.prefix(6))", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         do {
             for (path, text) in files {
@@ -221,11 +221,11 @@ final class TestRunner {
         case "komut_calistir":
             return "Testte komut çalıştırma kapalı. Dosya araçlarıyla devam et."
         case "beyin_baglam":
-            return "Kullanıcı: yapay zeka videoları ve yerel model denemeleri. Son iş: Inkling Lab."
+            return "Kullanıcı: yapay zeka videoları ve yerel model denemeleri. Son iş: AurelionLabs."
         case "beyin_ara":
-            return "• Inkling Lab — Projeler/inkling-lab.md\n  16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
+            return "• AurelionLabs — Projeler/inkling-lab.md\n  16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
         case "beyin_oku":
-            return "# Inkling Lab\n16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
+            return "# AurelionLabs\n16K bağlam: IQ3_XXS testlerin 25/27'si, 17–21 t/s; IQ4_XS 24/27, 10–14 t/s."
         case "beyin_kaydet":
             return "Kaydedildi: Projeler/\(a["baslik"] ?? "not").md (test, kasaya yazılmadı)"
         case "x_tarzi":
@@ -267,7 +267,7 @@ final class TestRunner {
 
     private static var historyURL: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InklingLab", isDirectory: true)
+            .appendingPathComponent("AurelionLabs", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("test-history.json")
     }

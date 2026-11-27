@@ -2,11 +2,12 @@ import AppKit
 import SwiftUI
 
 @main
-struct InklingLabApp: App {
+struct AurelionLabsApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var store: LabStore
 
     init() {
+        Self.migrateOldDataFolder()
         let server = ServerManager()
         let store = LabStore(server: server)
         AppDelegate.server = server
@@ -21,8 +22,18 @@ struct InklingLabApp: App {
         }
     }
 
+    /// Eski adla (InklingLab) kaydedilen sohbet, ayar ve test geçmişini yeni klasöre taşır.
+    private static func migrateOldDataFolder() {
+        let fm = FileManager.default
+        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let old = support.appendingPathComponent("InklingLab", isDirectory: true)
+        let new = support.appendingPathComponent("AurelionLabs", isDirectory: true)
+        guard fm.fileExists(atPath: old.path), !fm.fileExists(atPath: new.path) else { return }
+        try? fm.moveItem(at: old, to: new)
+    }
+
     var body: some Scene {
-        WindowGroup("Inkling Lab") {
+        WindowGroup("AurelionLabs") {
             RootView()
                 .environment(store)
                 .frame(minWidth: 980, minHeight: 660)

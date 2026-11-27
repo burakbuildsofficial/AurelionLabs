@@ -349,7 +349,7 @@ final class LabStore {
 
     private static var conversationsDir: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InklingLab/conversations", isDirectory: true)
+            .appendingPathComponent("AurelionLabs/conversations", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
@@ -547,7 +547,7 @@ final class LabStore {
 
     private var presetsURL: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InklingLab", isDirectory: true)
+            .appendingPathComponent("AurelionLabs", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("presets.json")
     }

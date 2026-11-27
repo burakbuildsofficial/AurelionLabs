@@ -1,6 +1,6 @@
-<p align="center"><img src="Assets/AppIcon-1024.png" width="128" alt="Inkling Lab icon"></p>
+<p align="center"><img src="Assets/AppIcon-1024.png" width="128" alt="AurelionLabs icon"></p>
 
-<h1 align="center">Inkling Lab</h1>
+<h1 align="center">AurelionLabs</h1>
 
 <p align="center">
 A native macOS app for running local GGUF models on Apple Silicon: chat, documents, a tool-using agent and a built-in benchmark suite.<br>
@@ -11,11 +11,11 @@ Everything runs on your Mac. Nothing leaves it.
 <a href="#türkçe">Türkçe</a> · <a href="#quick-start">Quick start</a> · <a href="#benchmarks">Benchmarks</a> · <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-<p align="center"><img src="docs/screenshot-chat.png" width="820" alt="Inkling Lab chat screen with the three one-click modes"></p>
+<p align="center"><img src="docs/screenshot-chat.png" width="820" alt="AurelionLabs chat screen with the three one-click modes"></p>
 
 ## Why
 
-I wanted to know how far a 24 GB MacBook can go with a modern MoE model ([Inkling 2 Mini](https://huggingface.co/thinkingmachines)), and I wanted one app to use it every day instead of a terminal. Inkling Lab is built with SwiftUI and drives [llama.cpp](https://github.com/ggml-org/llama.cpp) and [Atomic Engine](https://github.com/AtomicBot-ai/atomic-engine) in the background. It works with any GGUF model, not just Inkling.
+I wanted to know how far a 24 GB MacBook can go with a modern MoE model ([Inkling 2 Mini](https://huggingface.co/thinkingmachines)), and I wanted one app to use it every day instead of a terminal. AurelionLabs is built with SwiftUI and drives [llama.cpp](https://github.com/ggml-org/llama.cpp) and [Atomic Engine](https://github.com/AtomicBot-ai/atomic-engine) in the background. It works with any GGUF model, not just Inkling.
 
 ## Features
 
@@ -43,15 +43,15 @@ cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_METAL=ON && cmake --build ~/lla
 #    ~/models/inkling-2-mini/Inkling-2-Mini-UD-IQ3_XXS.gguf  (+ mmproj-F16.gguf for images)
 
 # 3. The app
-git clone https://github.com/burakbuildsofficial/inkling-lab && cd inkling-lab
-./scripts/build-app.sh && open build/InklingLab.app
+git clone https://github.com/burakbuildsofficial/AurelionLabs && cd AurelionLabs
+./scripts/build-app.sh && open build/AurelionLabs.app
 ```
 
 The app starts `llama-server` on `127.0.0.1:8001` and stops it when you quit. You can change the paths under Settings › Server.
 
 ### Optional: Atomic Engine (faster 4-bit, less memory)
 
-Atomic Engine streams MoE experts from the SSD, so a 4-bit model runs within a fixed memory budget. When you pick a model whose name contains `-AD-`, Inkling Lab uses it automatically.
+Atomic Engine streams MoE experts from the SSD, so a 4-bit model runs within a fixed memory budget. When you pick a model whose name contains `-AD-`, AurelionLabs uses it automatically.
 
 ```bash
 git clone -b engine-development https://github.com/AtomicBot-ai/atomic-engine ~/atomic-engine
@@ -93,9 +93,9 @@ Bonsai's misses: one JSON answer (`"plaka": 06`, a leading zero is not valid JSO
 Run the suite yourself, headless:
 
 ```bash
-build/InklingLab.app/Contents/MacOS/InklingLab --run-tests --model ~/models/…/model.gguf
+build/AurelionLabs.app/Contents/MacOS/AurelionLabs --run-tests --model ~/models/…/model.gguf
 # only the agent tests, with a built-in preset and a bigger output budget for long thinkers:
-build/InklingLab.app/Contents/MacOS/InklingLab --run-tests --only agent --preset Bonsai --min-tokens 12288 --model …
+build/AurelionLabs.app/Contents/MacOS/AurelionLabs --run-tests --only agent --preset Bonsai --min-tokens 12288 --model …
 ```
 
 Please share your numbers (chip, RAM, model, tok/s) in [Discussions](../../discussions) or open a PR that adds them to `docs/benchmarks/`.
@@ -103,7 +103,7 @@ Please share your numbers (chip, RAM, model, tok/s) in [Discussions](../../discu
 ## Project layout
 
 ```
-Sources/InklingLab/
+Sources/AurelionLabs/
   App.swift                    window, menus, shortcuts
   Design/                      theme tokens, motion
   Model/                       chat, presets, test suite
