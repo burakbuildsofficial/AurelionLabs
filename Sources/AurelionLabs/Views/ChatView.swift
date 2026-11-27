@@ -45,18 +45,18 @@ private struct EmptyChat: View {
     @Environment(LabStore.self) private var store
 
     private let suggestions = [
-        "Kendini iki cümleyle tanıt.",
-        "Bu resimde ne görüyorsun?",
-        "Bir SwiftUI sayacı yaz, açıklamalı olsun.",
-        "Kuantum dolanıklığını 10 yaşındaki birine anlat.",
+        L("Kendini iki cümleyle tanıt."),
+        L("Bu resimde ne görüyorsun?"),
+        L("Bir SwiftUI sayacı yaz, açıklamalı olsun."),
+        L("Kuantum dolanıklığını 10 yaşındaki birine anlat."),
     ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            Text("Bir şey sor, resim ya da dosya sürükle")
+            Text(L("Bir şey sor, resim ya da dosya sürükle"))
                 .font(Theme.Font.section)
                 .foregroundStyle(Theme.textPrimary)
-            Text("Model tamamen bu Mac'te çalışır, hiçbir şey dışarı gitmez. Modeli ve ön ayarı üstteki menülerden tek tıkla değiştirebilirsin.")
+            Text(L("Model tamamen bu Mac'te çalışır, hiçbir şey dışarı gitmez. Modeli ve ön ayarı üstteki menülerden tek tıkla değiştirebilirsin."))
                 .font(Theme.Font.callout)
                 .foregroundStyle(Theme.textSecondary)
             FlowRow(spacing: Theme.Space.s) {
@@ -66,7 +66,7 @@ private struct EmptyChat: View {
             }
             Divider().overlay(Theme.hairline)
             VStack(alignment: .leading, spacing: 8) {
-                Text("Kullanım modu").font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
+                Text(L("Kullanım modu")).font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
                 HStack(spacing: Theme.Space.s) {
                     ForEach(LabStore.UseMode.allCases) { mode in
                         let selected = store.currentUseMode == mode
@@ -91,7 +91,7 @@ private struct EmptyChat: View {
                     }
                 }
                 if store.server.isBusy {
-                    Label("Model değiştiriliyor…", systemImage: "hourglass")
+                    Label(L("Model değiştiriliyor…"), systemImage: "hourglass")
                         .font(Theme.Font.small).foregroundStyle(Theme.textSecondary)
                 }
             }
@@ -181,7 +181,7 @@ struct MessageRow: View {
             if message.text.isEmpty && message.isStreaming && message.reasoning.isEmpty {
                 HStack(spacing: Theme.Space.s) {
                     ProgressView().controlSize(.small)
-                    Text("İstem işleniyor…").font(Theme.Font.callout).foregroundStyle(Theme.textSecondary)
+                    Text(L("İstem işleniyor…")).font(Theme.Font.callout).foregroundStyle(Theme.textSecondary)
                 }
             } else if !message.text.isEmpty {
                 MessageText(text: message.text)
@@ -208,9 +208,9 @@ struct MessageRow: View {
                     Spacer()
                     if !compact {
                         if isLast {
-                            RoundAction(symbol: "arrow.clockwise", label: "Yeniden üret") { store.regenerateLast() }
+                            RoundAction(symbol: "arrow.clockwise", label: L("Yeniden üret")) { store.regenerateLast() }
                         }
-                        RoundAction(symbol: "doc.on.doc", label: "Kopyala") {
+                        RoundAction(symbol: "doc.on.doc", label: L("Kopyala")) {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(message.text, forType: .string)
                         }
@@ -241,9 +241,9 @@ struct ReasoningPanel: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "brain")
-                    Text(live ? "Düşünüyor…" : "Düşündü")
+                    Text(live ? L("Düşünüyor…") : L("Düşündü"))
                         .fontWeight(.semibold)
-                    Text("· \(text.count.formatted()) karakter")
+                    Text(L("· \(text.count.formatted()) karakter"))
                         .foregroundStyle(Theme.textTertiary)
                     Spacer()
                     Image(systemName: "chevron.down")
@@ -254,7 +254,7 @@ struct ReasoningPanel: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(expanded ? "Düşünmeyi gizle" : "Düşünmeyi göster")
+            .accessibilityLabel(expanded ? L("Düşünmeyi gizle") : L("Düşünmeyi göster"))
 
             if expanded || live {
                 Text(text)
@@ -296,12 +296,12 @@ struct Composer: View {
                     }
                 }
                 if store.draftContextShare > 0.75 {
-                    ModeHint(text: "Dosyalar bağlamın %\(Int(store.draftContextShare * 100))'ini dolduruyor, cevap kesilebilir.",
+                    ModeHint(text: L("Dosyalar bağlamın %\(Int(store.draftContextShare * 100))'ini dolduruyor, cevap kesilebilir."),
                              mode: store.currentUseMode == .long ? nil : .long)
                 }
             }
             if !store.draftImages.isEmpty && !store.server.imagesAvailable {
-                ModeHint(text: "Açık model resim okuyamıyor.", mode: store.model(for: .general)?.mmproj != nil ? .general : nil)
+                ModeHint(text: L("Açık model resim okuyamıyor."), mode: store.model(for: .general)?.mmproj != nil ? .general : nil)
             }
             if let step = store.agentStep {
                 HStack(spacing: Theme.Space.s) {
@@ -334,16 +334,16 @@ struct Composer: View {
                     }
             }
             HStack(spacing: Theme.Space.s) {
-                RoundAction(symbol: "paperclip", label: "Dosya ya da resim ekle") { importing = true }
+                RoundAction(symbol: "paperclip", label: L("Dosya ya da resim ekle")) { importing = true }
                 ToolsToggle()
                 Text(hint)
                     .font(Theme.Font.small)
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
                 if store.isGenerating {
-                    PrimaryButton(title: "Durdur", symbol: "stop.fill") { store.stop() }
+                    PrimaryButton(title: L("Durdur"), symbol: "stop.fill") { store.stop() }
                 } else {
-                    PrimaryButton(title: "Gönder", symbol: "arrow.up", enabled: store.canSend) { store.send() }
+                    PrimaryButton(title: L("Gönder"), symbol: "arrow.up", enabled: store.canSend) { store.send() }
                         .keyboardShortcut(.return, modifiers: .command)
                 }
             }
@@ -359,7 +359,7 @@ struct Composer: View {
         .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
         .dropDestination(for: URL.self) { urls, _ in
             let skipped = store.attach(urls)
-            attachNote = skipped.isEmpty ? nil : "Eklenemedi: " + skipped.joined(separator: ", ")
+            attachNote = skipped.isEmpty ? nil : L("Eklenemedi: ") + skipped.joined(separator: ", ")
             return skipped.count < urls.count
         } isTargeted: { dropTargeted = $0 }
         .onPasteCommand(of: [.fileURL, .image, .png, .tiff, .jpeg]) { _ in
@@ -375,20 +375,20 @@ struct Composer: View {
                       allowsMultipleSelection: true) { result in
             if case .success(let urls) = result {
                 let skipped = store.attach(urls)
-                attachNote = skipped.isEmpty ? nil : "Eklenemedi: " + skipped.joined(separator: ", ")
+                attachNote = skipped.isEmpty ? nil : L("Eklenemedi: ") + skipped.joined(separator: ", ")
             }
         }
         .onAppear { focused = true }
     }
 
     private var placeholder: String {
-        store.server.isUsable ? "Bir şey sor…" : "Model yüklenince yazabilirsin. Üstteki model menüsünden seç."
+        store.server.isUsable ? L("Bir şey sor…") : L("Model yüklenince yazabilirsin. Üstteki model menüsünden seç.")
     }
 
     private var hint: String {
         store.server.imagesAvailable
-            ? "Enter gönderir · Shift+Enter yeni satır · resim, PDF ya da kod dosyası sürükle"
-            : "Enter gönderir · PDF ya da kod dosyası sürükle (resim desteği kapalı)"
+            ? L("Enter gönderir · Shift+Enter yeni satır · resim, PDF ya da kod dosyası sürükle")
+            : L("Enter gönderir · PDF ya da kod dosyası sürükle (resim desteği kapalı)")
     }
 }
 
@@ -404,7 +404,7 @@ struct DocumentChip: View {
                 .foregroundStyle(Theme.primary)
             VStack(alignment: .leading, spacing: 1) {
                 Text(doc.name).font(Theme.Font.caption.weight(.semibold)).foregroundStyle(Theme.textPrimary).lineLimit(1)
-                Text("~\(doc.approxTokens.formatted()) token" + (doc.truncated ? " · kısaltıldı" : ""))
+                Text(L("~\(doc.approxTokens.formatted()) token") + (doc.truncated ? L(" · kısaltıldı") : ""))
                     .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
             }
             if let onRemove {
@@ -412,14 +412,14 @@ struct DocumentChip: View {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.textTertiary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Dosyayı kaldır")
+                .accessibilityLabel(L("Dosyayı kaldır"))
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
         .frame(maxWidth: 260, alignment: .leading)
         .background(Theme.surfaceRaised, in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
-        .help(doc.truncated ? "Dosya uzun olduğu için ilk \(DocumentLoader.maxChars.formatted()) karakteri gönderilecek." : doc.name)
+        .help(doc.truncated ? L("Dosya uzun olduğu için ilk \(DocumentLoader.maxChars.formatted()) karakteri gönderilecek.") : doc.name)
     }
 }
 
@@ -434,7 +434,7 @@ struct ModeHint: View {
             Image(systemName: Theme.Tone.caution.symbol).foregroundStyle(Theme.Tone.caution.color)
             Text(text).font(Theme.Font.small).foregroundStyle(Theme.textSecondary)
             if let mode {
-                Button("\(mode.title) moduna geç") { store.activate(mode) }
+                Button(L("\(mode.title) moduna geç")) { store.activate(mode) }
                     .buttonStyle(.plain)
                     .font(Theme.Font.small.weight(.semibold))
                     .foregroundStyle(Theme.primary)
@@ -450,17 +450,17 @@ struct ToolsToggle: View {
 
     var body: some View {
         Menu {
-            Toggle("Araçları kullan (ajan modu)", isOn: Binding(get: { store.toolsEnabled }, set: { store.toolsEnabled = $0 }))
+            Toggle(L("Araçları kullan (ajan modu)"), isOn: Binding(get: { store.toolsEnabled }, set: { store.toolsEnabled = $0 }))
             Divider()
-            Text(store.agentFolder.map { "Çalışma klasörü: \($0.lastPathComponent)" } ?? "Çalışma klasörü yok: hesap, saat, beceriler ve Beyin")
-            Button("Çalışma klasörü seç…", systemImage: "folder") { store.chooseAgentFolder() }
+            Text(store.agentFolder.map { L("Çalışma klasörü: \($0.lastPathComponent)") } ?? L("Çalışma klasörü yok: hesap, saat, beceriler ve Beyin"))
+            Button(L("Çalışma klasörü seç…"), systemImage: "folder") { store.chooseAgentFolder() }
             if store.agentFolder != nil {
-                Button("Klasörü kaldır", systemImage: "folder.badge.minus") { store.agentFolder = nil }
+                Button(L("Klasörü kaldır"), systemImage: "folder.badge.minus") { store.agentFolder = nil }
             }
             Divider()
-            Text("Dosya yazma ve komut çalıştırma her seferinde onayını ister")
+            Text(L("Dosya yazma ve komut çalıştırma her seferinde onayını ister"))
         } label: {
-            Label(store.toolsEnabled ? "Ajan açık" : "Ajan", systemImage: "wrench.and.screwdriver")
+            Label(store.toolsEnabled ? L("Ajan açık") : L("Ajan"), systemImage: "wrench.and.screwdriver")
                 .font(Theme.Font.small.weight(.semibold))
                 .foregroundStyle(store.toolsEnabled ? Theme.primary : Theme.textSecondary)
                 .padding(.horizontal, 10).padding(.vertical, 5)
@@ -470,7 +470,7 @@ struct ToolsToggle: View {
         .buttonStyle(.plain)
         .fixedSize()
         .disabled(store.isGenerating)
-        .help("Modele hesap makinesi, saat, dosya okuma/yazma ve terminal ver")
+        .help(L("Modele hesap makinesi, saat, dosya okuma/yazma ve terminal ver"))
     }
 }
 
@@ -512,7 +512,7 @@ struct ToolResultRow: View {
             }
             .frame(maxHeight: 220)
         } label: {
-            Text("\(message.toolName ?? "araç") sonucu · " + String(message.text.prefix(80)).replacingOccurrences(of: "\n", with: " "))
+            Text(L("\(message.toolName ?? L("araç")) sonucu · ") + String(message.text.prefix(80)).replacingOccurrences(of: "\n", with: " "))
                 .font(Theme.Font.caption).foregroundStyle(Theme.textTertiary).lineLimit(1)
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
@@ -530,10 +530,10 @@ struct ApprovalSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            Label(isCommand ? "Model bir komut çalıştırmak istiyor" : "Model bir dosya yazmak istiyor",
+            Label(isCommand ? L("Model bir komut çalıştırmak istiyor") : L("Model bir dosya yazmak istiyor"),
                   systemImage: Theme.Tone.caution.symbol)
                 .font(Theme.Font.headline).foregroundStyle(Theme.textPrimary)
-            Text("Klasör: " + (store.agentFolder?.path ?? "-")).font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
+            Text(L("Klasör: ") + (store.agentFolder?.path ?? "-")).font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
             ScrollView {
                 Text(isCommand ? approval.summary : preview)
                     .font(.system(.callout, design: .monospaced)).foregroundStyle(Theme.textPrimary)
@@ -543,8 +543,8 @@ struct ApprovalSheet: View {
             .background(Theme.surfaceRaised, in: .rect(cornerRadius: Theme.Radius.tile, style: .continuous))
             HStack {
                 Spacer()
-                Button("Reddet", role: .cancel) { store.resolveApproval(false) }.keyboardShortcut(.cancelAction)
-                Button(isCommand ? "Çalıştır" : "Yaz") { store.resolveApproval(true) }.keyboardShortcut(.defaultAction)
+                Button(L("Reddet"), role: .cancel) { store.resolveApproval(false) }.keyboardShortcut(.cancelAction)
+                Button(isCommand ? L("Çalıştır") : L("Yaz")) { store.resolveApproval(true) }.keyboardShortcut(.defaultAction)
             }
         }
         .padding(Theme.Space.l)

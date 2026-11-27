@@ -90,7 +90,7 @@ final class ServerManager {
         await reapLeftover()
         if await Self.health(port: config.port) == .ok {
             state = .external
-            append("127.0.0.1:\(config.port) üzerinde çalışan bir sunucu bulundu, o kullanılıyor.")
+            append(L("127.0.0.1:\(config.port) üzerinde çalışan bir sunucu bulundu, o kullanılıyor."))
         } else {
             start()
         }
@@ -112,7 +112,7 @@ final class ServerManager {
               let pid = pid_t(s.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 0 else { return }
         try? FileManager.default.removeItem(at: Self.pidFile)
         guard Self.isLlamaServer(pid) else { return }
-        append("Önceki oturumdan kalan sunucu (pid \(pid)) kapatılıyor.")
+        append(L("Önceki oturumdan kalan sunucu (pid \(pid)) kapatılıyor."))
         kill(pid, SIGTERM)
         for _ in 0..<40 where kill(pid, 0) == 0 {
             try? await Task.sleep(for: .milliseconds(250))
@@ -135,7 +135,7 @@ final class ServerManager {
                 guard let self else { return }
                 if self.state == .external, await Self.health(port: self.config.port) == .down {
                     self.state = .stopped
-                    self.append("Harici sunucu kapandı.")
+                    self.append(L("Harici sunucu kapandı."))
                 }
             }
         }
@@ -146,11 +146,11 @@ final class ServerManager {
         let fm = FileManager.default
         if config.usesAtomic { startAtomic(); return }
         guard fm.isExecutableFile(atPath: config.serverPath) else {
-            state = .failed("llama-server bulunamadı: \(config.serverPath). Yolu Sunucu bölümünden düzelt.")
+            state = .failed(L("llama-server bulunamadı: \(config.serverPath). Yolu Sunucu bölümünden düzelt."))
             return
         }
         guard fm.fileExists(atPath: config.modelPath) else {
-            state = .failed("Model dosyası bulunamadı: \(config.modelPath). Yolu Sunucu bölümünden düzelt.")
+            state = .failed(L("Model dosyası bulunamadı: \(config.modelPath). Yolu Sunucu bölümünden düzelt."))
             return
         }
         var args = ["-m", config.modelPath,
@@ -165,7 +165,7 @@ final class ServerManager {
                 args += ["--mmproj", config.mmprojPath]
             } else {
                 launched.imagesEnabled = false
-                append("Bu modelin klasöründe resim dosyası (mmproj) yok; resim desteği kapalı başlatılıyor.")
+                append(L("Bu modelin klasöründe resim dosyası (mmproj) yok; resim desteği kapalı başlatılıyor."))
             }
         }
 
@@ -177,11 +177,11 @@ final class ServerManager {
         let fm = FileManager.default
         let exe = config.atomicServer
         guard fm.isExecutableFile(atPath: exe) else {
-            state = .failed("Atomic Engine bulunamadı: \(exe). ~/atomic-engine içinde derlenmesi gerekiyor.")
+            state = .failed(L("Atomic Engine bulunamadı: \(exe). ~/atomic-engine içinde derlenmesi gerekiyor."))
             return
         }
         guard fm.fileExists(atPath: config.modelPath) else {
-            state = .failed("Model dosyası bulunamadı: \(config.modelPath).")
+            state = .failed(L("Model dosyası bulunamadı: \(config.modelPath)."))
             return
         }
         var launched = config
@@ -197,7 +197,7 @@ final class ServerManager {
             args += ["-md", draft, "--spec-type", "draft-dspark", "--spec-draft-n-max", "3", "--spec-draft-n-ubatch", "32",
                      "-ctkd", "q4_0", "-ctvd", "q4_0", "-ngld", "99"]
         } else {
-            append("Klasörde DSpark taslak modeli yok; taslaksız çalışılıyor (daha yavaş).")
+            append(L("Klasörde DSpark taslak modeli yok; taslaksız çalışılıyor (daha yavaş)."))
         }
         launch(executable: exe, args: args, launched: launched)
     }
@@ -221,11 +221,11 @@ final class ServerManager {
         }
 
         logTail.removeAll()
-        append("Başlatılıyor (\(launched.engineName)): " + args.joined(separator: " "))
+        append(L("Başlatılıyor (\(launched.engineName)): ") + args.joined(separator: " "))
         do {
             try p.run()
         } catch {
-            state = .failed("Sunucu başlatılamadı: \(error.localizedDescription)")
+            state = .failed(L("Sunucu başlatılamadı: \(error.localizedDescription)"))
             return
         }
         process = p
@@ -270,7 +270,7 @@ final class ServerManager {
     private func relaunch() async {
         guard state != .switching else { return }
         state = .switching
-        append("Model değiştiriliyor: \(URL(fileURLWithPath: config.modelPath).lastPathComponent)")
+        append(L("Model değiştiriliyor: \(URL(fileURLWithPath: config.modelPath).lastPathComponent)"))
         await takeOverPort()
         await stopAndWait()
         state = .stopped
@@ -306,7 +306,7 @@ final class ServerManager {
         let pids = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             .split(whereSeparator: \.isNewline).compactMap { pid_t($0) }
         for pid in pids where Self.isLlamaServer(pid) {
-            append("Harici sunucu (pid \(pid)) kapatılıyor, yönetim bu uygulamaya geçiyor.")
+            append(L("Harici sunucu (pid \(pid)) kapatılıyor, yönetim bu uygulamaya geçiyor."))
             kill(pid, SIGTERM)
             for _ in 0..<100 where kill(pid, 0) == 0 { try? await Task.sleep(for: .milliseconds(100)) }
             if kill(pid, 0) == 0 { kill(pid, SIGKILL) }
@@ -333,7 +333,7 @@ final class ServerManager {
         runningConfig = nil
         watchTask?.cancel()
         let last = logTail.suffix(4).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-        state = .failed("Sunucu kapandı (kod \(code)). \(last.isEmpty ? "" : "Son kayıt: \(last.suffix(240))")")
+        state = .failed(L("Sunucu kapandı (kod \(code)).") + (last.isEmpty ? "" : " " + L("Son kayıt: \(String(last.suffix(240)))")))
     }
 
     private func watchUntilReady() {

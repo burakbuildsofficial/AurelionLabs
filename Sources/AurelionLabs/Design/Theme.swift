@@ -23,11 +23,11 @@ enum Palette: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .blue: "Mavi"
-        case .indigo: "Çivit"
-        case .coral: "Mercan"
-        case .forest: "Orman"
-        case .teal: "Deniz"
+        case .blue: L("Mavi")
+        case .indigo: L("Çivit")
+        case .coral: L("Mercan")
+        case .forest: L("Orman")
+        case .teal: L("Deniz")
         }
     }
 
@@ -42,9 +42,9 @@ enum Appearance: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .system: "Sistem"
-        case .light: "Açık"
-        case .dark: "Koyu"
+        case .system: L("Sistem")
+        case .light: L("Açık")
+        case .dark: L("Koyu")
         }
     }
     var symbol: String {

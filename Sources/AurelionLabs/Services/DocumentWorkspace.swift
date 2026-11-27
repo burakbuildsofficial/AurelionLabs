@@ -137,10 +137,10 @@ final class DocumentWorkspace {
                     var partSummaries: [String] = []
                     for (i, part) in parts.enumerated() {
                         try Task.checkCancellation()
-                        self.step = parts.count > 1 ? "\(doc.name) · bölüm \(i + 1)/\(parts.count) özetleniyor" : "\(doc.name) özetleniyor"
+                        self.step = parts.count > 1 ? L("\(doc.name) · bölüm \(i + 1)/\(parts.count) özetleniyor") : L("\(doc.name) özetleniyor")
                         let s = try await self.ask(
-                            "Aşağıdaki metin \"\(doc.name)\" dosyasının \(parts.count > 1 ? "\(i + 1)/\(parts.count). bölümü" : "tamamı"). " +
-                            "Önemli bilgileri, sayıları ve adları koruyarak Türkçe ve madde madde özetle. Yalnız metinde olanı yaz.\n\n<metin>\n\(part)\n</metin>",
+                            (parts.count > 1 ? L("Aşağıdaki metin \"\(doc.name)\" dosyasının \(i + 1)/\(parts.count). bölümü. ") : L("Aşağıdaki metin \"\(doc.name)\" dosyasının tamamı. ")) +
+                            L("Önemli bilgileri, sayıları ve adları koruyarak Türkçe ve madde madde özetle. Yalnız metinde olanı yaz.\n\n<metin>\n\(part)\n</metin>"),
                             params: params, maxTokens: 2500)
                         partSummaries.append(s)
                         self.progress.done += 1
@@ -148,7 +148,7 @@ final class DocumentWorkspace {
                     var summary = partSummaries.first ?? ""
                     if partSummaries.count > 1 {
                         try Task.checkCancellation()
-                        self.step = "\(doc.name) · bölüm özetleri birleştiriliyor"
+                        self.step = L("\(doc.name) · bölüm özetleri birleştiriliyor")
                         summary = try await self.merge(partSummaries, title: doc.name, params: params, budget: budget)
                         self.progress.done += 1
                     }
@@ -157,16 +157,16 @@ final class DocumentWorkspace {
                 }
                 if perDoc.count > 1 {
                     try Task.checkCancellation()
-                    self.step = "Genel özet yazılıyor"
-                    let overall = try await self.merge(perDoc.map { "\($0.0): \($0.1)" }, title: "tüm belgeler", params: params, budget: budget)
+                    self.step = L("Genel özet yazılıyor")
+                    let overall = try await self.merge(perDoc.map { "\($0.0): \($0.1)" }, title: L("tüm belgeler"), params: params, budget: budget)
                     self.progress.done += 1
-                    self.output = "## Genel özet\n\n\(overall)\n\n" + perDoc.map { "## \($0.0)\n\n\($0.1)" }.joined(separator: "\n\n")
+                    self.output = L("## Genel özet\n\n\(overall)\n\n") + perDoc.map { "## \($0.0)\n\n\($0.1)" }.joined(separator: "\n\n")
                 }
-                self.step = "Bitti"
+                self.step = L("Bitti")
             } catch is CancellationError {
-                self.step = "Durduruldu"
+                self.step = L("Durduruldu")
             } catch let e as URLError where e.code == .cancelled {
-                self.step = "Durduruldu"
+                self.step = L("Durduruldu")
             } catch {
                 self.error = error.localizedDescription
             }
@@ -181,8 +181,8 @@ final class DocumentWorkspace {
             let joined = level.enumerated().map { "[\($0.offset + 1)] \($0.element)" }.joined(separator: "\n\n")
             if joined.count <= Self.chars(budget) || level.count == 1 {
                 return try await ask(
-                    "Aşağıda \"\(title)\" için parça özetleri var. Bunları tekrarsız, düzenli tek bir Türkçe özette birleştir: " +
-                    "önce 2-3 cümlelik genel bakış, sonra en önemli maddeler.\n\n\(String(joined.prefix(Self.chars(budget))))",
+                    L("Aşağıda \"\(title)\" için parça özetleri var. Bunları tekrarsız, düzenli tek bir Türkçe özette birleştir: ") +
+                    L("önce 2-3 cümlelik genel bakış, sonra en önemli maddeler.\n\n\(String(joined.prefix(Self.chars(budget))))"),
                     params: params, maxTokens: 3000)
             }
             // Gruplara böl, her grubu ayrı birleştir.
@@ -194,7 +194,7 @@ final class DocumentWorkspace {
             var next: [String] = []
             for g in groups {
                 try Task.checkCancellation()
-                next.append(try await ask("Bu özetleri tek bir kısa özette birleştir:\n\n" + g.joined(separator: "\n\n"),
+                next.append(try await ask(L("Bu özetleri tek bir kısa özette birleştir:\n\n") + g.joined(separator: "\n\n"),
                                           params: params, maxTokens: 2000))
             }
             level = next
@@ -211,15 +211,15 @@ final class DocumentWorkspace {
         let chunks = Self.chunks(docs, maxChars: 2400)
         let picked = Self.retrieve(q, from: chunks, maxChars: Self.chars(budget) - q.count - 400)
         sources = picked
-        step = "\(chunks.count) bölüm içinden en ilgili \(picked.count) tanesi okunuyor"
+        step = L("\(chunks.count) bölüm içinden en ilgili \(picked.count) tanesi okunuyor")
         progress = (0, 1)
         let client = LLMClient(baseURL: server.baseURL)
         task = Task { [weak self] in
             guard let self else { return }
-            let context = picked.map { "[\($0.id)] \($0.docName)" + ($0.partCount > 1 ? " · bölüm \($0.part)/\($0.partCount)" : "") + "\n\($0.text)" }
+            let context = picked.map { "[\($0.id)] \($0.docName)" + ($0.partCount > 1 ? L(" · bölüm \($0.part)/\($0.partCount)") : "") + "\n\($0.text)" }
                 .joined(separator: "\n\n")
-            let prompt = "Aşağıdaki kaynaklara dayanarak soruyu Türkçe cevapla. Her bilginin sonuna dayandığı kaynağın numarasını " +
-                "[1] gibi yaz. Kaynaklarda cevap yoksa bunu açıkça söyle, uydurma.\n\n<kaynaklar>\n\(context)\n</kaynaklar>\n\nSoru: \(q)"
+            let prompt = L("Aşağıdaki kaynaklara dayanarak soruyu Türkçe cevapla. Her bilginin sonuna dayandığı kaynağın numarasını ") +
+                L("[1] gibi yaz. Kaynaklarda cevap yoksa bunu açıkça söyle, uydurma.\n\n<kaynaklar>\n\(context)\n</kaynaklar>\n\nSoru: \(q)")
             var p = params
             p.maxTokens = max(p.maxTokens, 3000)
             do {
@@ -231,12 +231,12 @@ final class DocumentWorkspace {
                     }
                 }
                 self.progress.done = 1
-                self.step = "Bitti"
-                if self.output.isEmpty { self.error = "Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır." }
+                self.step = L("Bitti")
+                if self.output.isEmpty { self.error = L("Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır.") }
             } catch is CancellationError {
-                self.step = "Durduruldu"
+                self.step = L("Durduruldu")
             } catch let e as URLError where e.code == .cancelled {
-                self.step = "Durduruldu"
+                self.step = L("Durduruldu")
             } catch {
                 self.error = error.localizedDescription
             }
@@ -298,7 +298,7 @@ final class DocumentWorkspace {
 
     private func begin(_ job: Job) {
         running = job
-        output = ""; reasoning = ""; sources = []; error = nil; stats = nil; step = "Hazırlanıyor"
+        output = ""; reasoning = ""; sources = []; error = nil; stats = nil; step = L("Hazırlanıyor")
     }
 
     private func ask(_ prompt: String, params: SamplingParams, maxTokens: Int) async throws -> String {
@@ -307,7 +307,7 @@ final class DocumentWorkspace {
         let r = try await LLMClient(baseURL: server.baseURL).complete(messages: [ChatMessage(role: .user, text: prompt)], params: p)
         let text = r.content.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty { throw NSError(domain: "Belge", code: 1, userInfo: [NSLocalizedDescriptionKey:
-            "Model bir bölüm için boş cevap verdi (düşünmesi token sınırını doldurdu). Tekrar dene ya da daha düşük sıcaklıklı bir ön ayar seç."]) }
+            L("Model bir bölüm için boş cevap verdi (düşünmesi token sınırını doldurdu). Tekrar dene ya da daha düşük sıcaklıklı bir ön ayar seç.")]) }
         return text
     }
 }

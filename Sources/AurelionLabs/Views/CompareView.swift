@@ -11,7 +11,7 @@ struct CompareView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ZStack(alignment: .topLeading) {
                         if store.comparePrompt.isEmpty {
-                            Text("Karşılaştırılacak soruyu yaz…")
+                            Text(L("Karşılaştırılacak soruyu yaz…"))
                                 .font(Theme.Font.body).foregroundStyle(Theme.textTertiary)
                                 .padding(.leading, 5).allowsHitTesting(false)
                         }
@@ -31,16 +31,16 @@ struct CompareView: View {
                     HStack(spacing: Theme.Space.m) {
                         presetPicker("A", selection: $store.compareA)
                         presetPicker("B", selection: $store.compareB)
-                        RoundAction(symbol: "photo.badge.plus", label: "Resim ekle") { importing = true }
+                        RoundAction(symbol: "photo.badge.plus", label: L("Resim ekle")) { importing = true }
                             .disabled(!store.server.imagesAvailable)
                         Spacer()
                         if store.isComparing {
-                            PrimaryButton(title: "Durdur", symbol: "stop.fill") { store.stop() }
+                            PrimaryButton(title: L("Durdur"), symbol: "stop.fill") { store.stop() }
                         } else {
-                            PrimaryButton(title: "Karşılaştır", symbol: "play.fill", enabled: store.canCompare) { store.runCompare() }
+                            PrimaryButton(title: L("Karşılaştır"), symbol: "play.fill", enabled: store.canCompare) { store.runCompare() }
                         }
                     }
-                    Text("İki cevap sırayla üretilir, böylece hız ölçümleri birbirini etkilemez.")
+                    Text(L("İki cevap sırayla üretilir, böylece hız ölçümleri birbirini etkilemez."))
                         .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
                 }
                 .card()
@@ -77,7 +77,7 @@ struct CompareView: View {
                 .frame(width: 22, height: 22)
                 .background(Theme.primary, in: .circle)
             Picker(label, selection: selection) {
-                ForEach(store.presets) { p in Text(p.name).tag(Optional(p.id)) }
+                ForEach(store.presets) { p in Text(p.displayName).tag(Optional(p.id)) }
             }
             .labelsHidden()
             .frame(width: 170)
@@ -87,13 +87,13 @@ struct CompareView: View {
     @ViewBuilder
     private func resultColumn(_ side: Int, label: String) -> some View {
         VStack(alignment: .leading, spacing: Theme.Space.s) {
-            let name = store.presets.first { $0.id == (side == 0 ? store.compareA : store.compareB) }?.name ?? "-"
+            let name = store.presets.first { $0.id == (side == 0 ? store.compareA : store.compareB) }?.displayName ?? "-"
             Text("\(label) · \(name)").font(Theme.Font.title).foregroundStyle(Theme.textPrimary)
             if let result = store.compareResults[side] {
                 MessageRow(message: result, showReasoning: store.showReasoning, compact: true)
                     .riseIn()
             } else {
-                Text(store.isComparing ? "Sırasını bekliyor…" : "Sonuç burada görünecek.")
+                Text(store.isComparing ? L("Sırasını bekliyor…") : L("Sonuç burada görünecek."))
                     .font(Theme.Font.callout)
                     .foregroundStyle(Theme.textTertiary)
                     .card()

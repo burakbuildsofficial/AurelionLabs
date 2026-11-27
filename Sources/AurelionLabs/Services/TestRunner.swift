@@ -110,12 +110,12 @@ final class TestRunner {
         if let make = t.image, let img = make(), let att = ImageLoader.attachment(from: img) { images = [att] }
         if t.image != nil && images.isEmpty {
             results[t.id]?.status = .error
-            results[t.id]?.error = "Test resmi oluşturulamadı."
+            results[t.id]?.error = L("Test resmi oluşturulamadı.")
             return
         }
         if t.image != nil && !server.imagesAvailable {
             results[t.id]?.status = .error
-            results[t.id]?.error = "Resim desteği kapalı. Sunucu bölümünden açıp yeniden başlat."
+            results[t.id]?.error = L("Resim desteği kapalı. Sunucu bölümünden açıp yeniden başlat.")
             return
         }
         if let files = t.agentFiles {
@@ -130,7 +130,7 @@ final class TestRunner {
             var verdict = await t.check(TestOutput(content: out.content, toolCalls: out.toolCalls))
             // Cevap boşsa ve token sınırı dolduysa sebep büyük ihtimalle uzun düşünmedir; bunu açıkça söyle.
             if !verdict.passed && out.content.isEmpty && out.toolCalls.isEmpty && out.stats.generatedTokens >= p.maxTokens - 1 {
-                verdict = Verdict(passed: false, detail: "Cevap boş: \(p.maxTokens) token'lık sınırın tamamı düşünmeye gitti.")
+                verdict = Verdict(passed: false, detail: L("Cevap boş: \(p.maxTokens) token'lık sınırın tamamı düşünmeye gitti."))
             }
             r.verdict = verdict
             r.status = verdict.passed ? .passed : .failed
@@ -163,7 +163,7 @@ final class TestRunner {
             }
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {
-            results[t.id]?.status = .error; results[t.id]?.error = "Test klasörü kurulamadı: \(error.localizedDescription)"; return
+            results[t.id]?.status = .error; results[t.id]?.error = L("Test klasörü kurulamadı: \(error.localizedDescription)"); return
         }
         let ctx = server.runningConfig?.contextSize ?? server.config.contextSize
         let maxChars = max(1500, min(20_000, Int(Double(ctx) * 3.3 * 0.35)))
@@ -201,8 +201,8 @@ final class TestRunner {
             let verdict = await t.check(TestOutput(content: final, toolCalls: all, allCalls: all, folder: folder))
             var res = Result(id: t.id, answer: final, reasoning: reasoning, toolCalls: all, stats: total)
             res.verdict = final.isEmpty && !verdict.passed
-                ? Verdict(passed: false, detail: verdict.detail + " (\(Self.agentMaxSteps) adımda son cevap gelmedi)") : verdict
-            if repairs > 0 { res.verdict = Verdict(passed: res.verdict!.passed, detail: res.verdict!.detail + " · \(repairs) bozuk çağrı geri çevrildi") }
+                ? Verdict(passed: false, detail: verdict.detail + L(" (\(Self.agentMaxSteps) adımda son cevap gelmedi)")) : verdict
+            if repairs > 0 { res.verdict = Verdict(passed: res.verdict!.passed, detail: res.verdict!.detail + L(" · \(repairs) bozuk çağrı geri çevrildi")) }
             res.status = verdict.passed ? .passed : .failed
             results[t.id] = res
         } catch is CancellationError {

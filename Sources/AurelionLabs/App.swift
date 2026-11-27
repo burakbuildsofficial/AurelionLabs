@@ -8,6 +8,8 @@ struct AurelionLabsApp: App {
 
     init() {
         Self.migrateOldDataFolder()
+        // Komut satırı testleri her zaman Türkçe koşar; böylece sonuçlar önceki ölçümlerle karşılaştırılabilir kalır.
+        if HeadlessTests.isRequested { Lang.current = .tr }
         let server = ServerManager()
         let store = LabStore(server: server)
         AppDelegate.server = server
@@ -28,8 +30,17 @@ struct AurelionLabsApp: App {
         let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let old = support.appendingPathComponent("InklingLab", isDirectory: true)
         let new = support.appendingPathComponent("AurelionLabs", isDirectory: true)
-        guard fm.fileExists(atPath: old.path), !fm.fileExists(atPath: new.path) else { return }
-        try? fm.moveItem(at: old, to: new)
+        if fm.fileExists(atPath: old.path), !fm.fileExists(atPath: new.path) {
+            try? fm.moveItem(at: old, to: new)
+        }
+        // Ayarlar eski paket kimliğinin (local.buraktas.inklinglab) alanında kaldı; bir kez buraya kopyalanır.
+        let d = UserDefaults.standard
+        guard !d.bool(forKey: "migratedFromInklingLab") else { return }
+        for (k, v) in d.persistentDomain(forName: "local.buraktas.inklinglab") ?? [:]
+        where !k.hasPrefix("NS") && d.object(forKey: k) == nil {
+            d.set(v, forKey: k)
+        }
+        d.set(true, forKey: "migratedFromInklingLab")
     }
 
     var body: some Scene {
@@ -47,16 +58,16 @@ struct AurelionLabsApp: App {
         .defaultSize(width: 1240, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("Yeni sohbet") { store.newChat(); store.mode = .chat }.keyboardShortcut("n")
+                Button(L("Yeni sohbet")) { store.newChat(); store.mode = .chat }.keyboardShortcut("n")
             }
             CommandGroup(replacing: .appSettings) {
-                Button("Ayarlar…") { store.mode = .settings }.keyboardShortcut(",")
+                Button(L("Ayarlar…")) { store.mode = .settings }.keyboardShortcut(",")
             }
             CommandMenu("Model") {
-                Button("Cevabı durdur") { store.stop() }.keyboardShortcut(".")
-                Button("Son cevabı yeniden üret") { store.regenerateLast() }.keyboardShortcut("r")
+                Button(L("Cevabı durdur")) { store.stop() }.keyboardShortcut(".")
+                Button(L("Son cevabı yeniden üret")) { store.regenerateLast() }.keyboardShortcut("r")
                 Divider()
-                Button("Düşünmeyi göster/gizle") { store.showReasoning.toggle() }.keyboardShortcut("t", modifiers: [.command, .shift])
+                Button(L("Düşünmeyi göster/gizle")) { store.showReasoning.toggle() }.keyboardShortcut("t", modifiers: [.command, .shift])
             }
         }
     }

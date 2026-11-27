@@ -66,7 +66,7 @@ enum ToolRepair {
     /// Çağrıyı onarır; onarılamıyorsa modele gidecek hata metnini döndürür.
     static func check(_ call: inout ToolCallRecord, schema: [String: [String]]) -> String? {
         guard let required = schema[call.name] else {
-            return "Hata: '\(call.name)' diye bir araç yok. Kullanılabilen araçlar: \(schema.keys.sorted().joined(separator: ", "))."
+            return L("Hata: '\(call.name)' diye bir araç yok. Kullanılabilen araçlar: \(schema.keys.sorted().joined(separator: ", ")).")
         }
         let trimmed = call.arguments.trimmingCharacters(in: .whitespacesAndNewlines)
         let obj: [String: Any]
@@ -75,7 +75,7 @@ enum ToolRepair {
         } else if let o = parseObject(trimmed) {
             obj = o
         } else {
-            return "Hata: \(call.name) argümanları geçerli JSON değil. Şu biçimde tekrar çağır: {\"ad\": \"değer\"}. Gelen: \(trimmed.prefix(200))"
+            return L("Hata: \(call.name) argümanları geçerli JSON değil. Şu biçimde tekrar çağır: {\"ad\": \"değer\"}. Gelen: \(trimmed.prefix(200))")
         }
         call.arguments = jsonString(obj)
         let missing = required.filter { k in
@@ -83,7 +83,7 @@ enum ToolRepair {
             return (v as? String)?.trimmingCharacters(in: .whitespaces).isEmpty == true
         }
         if !missing.isEmpty {
-            return "Hata: \(call.name) için zorunlu argüman eksik: \(missing.joined(separator: ", ")). Bunlarla tekrar çağır."
+            return L("Hata: \(call.name) için zorunlu argüman eksik: \(missing.joined(separator: ", ")). Bunlarla tekrar çağır.")
         }
         return nil
     }

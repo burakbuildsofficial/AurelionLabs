@@ -33,8 +33,8 @@ struct DocumentsView: View {
 
     private var filesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Belgeler", trailing: ws.docs.isEmpty ? nil : AnyView(
-                Button("Hepsini kaldır") { ws.clear() }
+            SectionHeader(title: L("Belgeler"), trailing: ws.docs.isEmpty ? nil : AnyView(
+                Button(L("Hepsini kaldır")) { ws.clear() }
                     .buttonStyle(.plain).font(Theme.Font.caption).foregroundStyle(Theme.textTertiary)
                     .disabled(ws.isRunning)
             ))
@@ -42,10 +42,10 @@ struct DocumentsView: View {
                 if ws.docs.isEmpty {
                     VStack(spacing: Theme.Space.s) {
                         Image(systemName: "folder.badge.plus").font(.system(size: 30)).foregroundStyle(Theme.primary)
-                        Text("Klasör ya da dosyaları buraya sürükle").font(Theme.Font.headline).foregroundStyle(Theme.textPrimary)
-                        Text("PDF, metin, Markdown, kod, CSV, JSON. Klasörün alt klasörleri de okunur. Hiçbir şey bu Mac'ten çıkmaz.")
+                        Text(L("Klasör ya da dosyaları buraya sürükle")).font(Theme.Font.headline).foregroundStyle(Theme.textPrimary)
+                        Text(L("PDF, metin, Markdown, kod, CSV, JSON. Klasörün alt klasörleri de okunur. Hiçbir şey bu Mac'ten çıkmaz."))
                             .font(Theme.Font.caption).foregroundStyle(Theme.textSecondary).multilineTextAlignment(.center)
-                        SecondaryButton(title: "Klasör ya da dosya seç", symbol: "plus", tint: Theme.primary) { importing = true }
+                        SecondaryButton(title: L("Klasör ya da dosya seç"), symbol: "plus", tint: Theme.primary) { importing = true }
                             .padding(.top, 4)
                     }
                     .frame(maxWidth: .infinity)
@@ -58,28 +58,28 @@ struct DocumentsView: View {
                                 .foregroundStyle(Theme.primary)
                             Text(d.name).font(Theme.Font.callout).foregroundStyle(Theme.textPrimary).lineLimit(1)
                             Spacer()
-                            Text("~\(d.approxTokens.formatted()) token").font(Theme.Font.stat).foregroundStyle(Theme.textTertiary)
+                            Text(L("~\(d.approxTokens.formatted()) token")).font(Theme.Font.stat).foregroundStyle(Theme.textTertiary)
                             Button { ws.remove(d) } label: { Image(systemName: "xmark.circle.fill") }
                                 .buttonStyle(.plain).foregroundStyle(Theme.textTertiary)
                                 .disabled(ws.isRunning)
-                                .accessibilityLabel("\(d.name) dosyasını kaldır")
+                                .accessibilityLabel(L("\(d.name) dosyasını kaldır"))
                         }
                         .padding(.vertical, 4)
                         .help(d.path)
                     }
                     if ws.docs.count > 40 {
-                        Text("ve \(ws.docs.count - 40) dosya daha").font(Theme.Font.caption).foregroundStyle(Theme.textTertiary)
+                        Text(L("ve \(ws.docs.count - 40) dosya daha")).font(Theme.Font.caption).foregroundStyle(Theme.textTertiary)
                     }
                     Divider().overlay(Theme.hairline)
                     HStack {
-                        Text("\(ws.docs.count) dosya · ~\(ws.totalTokens.formatted()) token")
+                        Text(L("\(ws.docs.count) dosya · ~\(ws.totalTokens.formatted()) token"))
                             .font(Theme.Font.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
                         Spacer()
-                        SecondaryButton(title: "Ekle", symbol: "plus") { importing = true }.disabled(ws.isRunning)
+                        SecondaryButton(title: L("Ekle"), symbol: "plus") { importing = true }.disabled(ws.isRunning)
                     }
                 }
                 if !ws.skipped.isEmpty {
-                    Text("Okunamadı: " + ws.skipped.prefix(6).joined(separator: ", ") + (ws.skipped.count > 6 ? " …" : ""))
+                    Text(L("Okunamadı: ") + ws.skipped.prefix(6).joined(separator: ", ") + (ws.skipped.count > 6 ? " …" : ""))
                         .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
                 }
             }
@@ -101,28 +101,28 @@ struct DocumentsView: View {
     private var actionsCard: some View {
         @Bindable var ws = ws
         return VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Ne yapalım?")
+            SectionHeader(title: L("Ne yapalım?"))
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 HStack(spacing: Theme.Space.s) {
-                    TextField("Belgelere soru sor: ör. sözleşmede fesih süresi kaç gün?", text: $ws.question)
+                    TextField(L("Belgelere soru sor: ör. sözleşmede fesih süresi kaç gün?"), text: $ws.question)
                         .textFieldStyle(.plain)
                         .font(Theme.Font.body)
                         .padding(.horizontal, 14)
                         .frame(height: 40)
                         .background(Theme.surfaceRaised, in: .capsule)
                         .onSubmit { ask() }
-                    PrimaryButton(title: "Sor", symbol: "questionmark.bubble",
+                    PrimaryButton(title: L("Sor"), symbol: "questionmark.bubble",
                                   enabled: canRun && !ws.question.trimmingCharacters(in: .whitespaces).isEmpty) { ask() }
                 }
                 HStack(spacing: Theme.Space.s) {
-                    SecondaryButton(title: "Hepsini özetle", symbol: "text.append", tint: Theme.primary) {
+                    SecondaryButton(title: L("Hepsini özetle"), symbol: "text.append", tint: Theme.primary) {
                         ws.summarize(params: store.params)
                     }
                     .disabled(!canRun)
                     Text(estimate).font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
                 }
                 if !store.server.isUsable {
-                    Text("Önce üstteki model menüsünden bir model yükle.").font(Theme.Font.small).foregroundStyle(Theme.Tone.caution.color)
+                    Text(L("Önce üstteki model menüsünden bir model yükle.")).font(Theme.Font.small).foregroundStyle(Theme.Tone.caution.color)
                 }
             }
             .card()
@@ -140,7 +140,7 @@ struct DocumentsView: View {
         let parts = ws.docs.reduce(0) { $0 + max(1, Int(ceil(Double($1.approxTokens) / Double(per)))) }
         let secs = Double(ws.totalTokens) / 250 + Double(parts) * 40
         let mins = max(1, Int((secs / 60).rounded()))
-        return "\(parts) parça · yaklaşık \(mins) dk"
+        return L("\(parts) parça · yaklaşık \(mins) dk")
     }
 
     // MARK: Sonuç
@@ -149,11 +149,11 @@ struct DocumentsView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: resultTitle, trailing: ws.output.isEmpty ? nil : AnyView(
                 HStack(spacing: 6) {
-                    RoundAction(symbol: "doc.on.doc", label: "Kopyala") {
+                    RoundAction(symbol: "doc.on.doc", label: L("Kopyala")) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(ws.output, forType: .string)
                     }
-                    RoundAction(symbol: "square.and.arrow.down", label: "Markdown olarak kaydet") { save() }
+                    RoundAction(symbol: "square.and.arrow.down", label: L("Markdown olarak kaydet")) { save() }
                 }
             ))
             VStack(alignment: .leading, spacing: 12) {
@@ -165,7 +165,7 @@ struct DocumentsView: View {
                         if ws.progress.total > 1 {
                             Text("\(ws.progress.done)/\(ws.progress.total)").font(Theme.Font.stat).foregroundStyle(Theme.textTertiary)
                         }
-                        SecondaryButton(title: "Durdur", symbol: "stop.fill", tint: Theme.Tone.danger.color) { ws.stop() }
+                        SecondaryButton(title: L("Durdur"), symbol: "stop.fill", tint: Theme.Tone.danger.color) { ws.stop() }
                     }
                     if ws.progress.total > 1 {
                         ProgressView(value: Double(ws.progress.done), total: Double(ws.progress.total)).tint(Theme.primary)
@@ -181,13 +181,13 @@ struct DocumentsView: View {
                 }
                 if !ws.sources.isEmpty {
                     Divider().overlay(Theme.hairline)
-                    Text("Kaynaklar").font(Theme.Font.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
+                    Text(L("Kaynaklar")).font(Theme.Font.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
                     ForEach(ws.sources) { c in
                         DisclosureGroup {
                             Text(c.text).font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
                                 .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                         } label: {
-                            Text("[\(c.id)] \(c.docName)" + (c.partCount > 1 ? " · bölüm \(c.part)/\(c.partCount)" : ""))
+                            Text("[\(c.id)] \(c.docName)" + (c.partCount > 1 ? L(" · bölüm \(c.part)/\(c.partCount)") : ""))
                                 .font(Theme.Font.caption).foregroundStyle(Theme.textPrimary)
                         }
                     }
@@ -200,15 +200,15 @@ struct DocumentsView: View {
 
     private var resultTitle: String {
         switch ws.running {
-        case .summary: "Özet"
-        case .answer: "Cevap"
-        case nil: ws.sources.isEmpty ? "Özet" : "Cevap"
+        case .summary: L("Özet")
+        case .answer: L("Cevap")
+        case nil: ws.sources.isEmpty ? L("Özet") : L("Cevap")
         }
     }
 
     private func save() {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = (ws.sources.isEmpty ? "Belge özeti" : "Belge cevabı") + ".md"
+        panel.nameFieldStringValue = (ws.sources.isEmpty ? L("Belge özeti") : L("Belge cevabı")) + ".md"
         panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         try? ws.output.write(to: url, atomically: true, encoding: .utf8)

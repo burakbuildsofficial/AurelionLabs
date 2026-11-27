@@ -34,11 +34,11 @@ enum SkillLibrary {
 
     static func read(name: String, file: String?, maxChars: Int) -> AgentTools.Outcome {
         guard let s = all().first(where: { $0.name == name }) else {
-            return .init(text: "Böyle bir beceri yok: \(name). Var olanlar: " + all().map(\.name).joined(separator: ", "), ok: false)
+            return .init(text: L("Böyle bir beceri yok: \(name). Var olanlar: ") + all().map(\.name).joined(separator: ", "), ok: false)
         }
         let rel = (file?.isEmpty == false) ? file! : "SKILL.md"
         guard let url = AgentTools.resolve(rel, in: s.folder) else {
-            return .init(text: "Hata: yol beceri klasörünün dışında.", ok: false)
+            return .init(text: L("Hata: yol beceri klasörünün dışında."), ok: false)
         }
         var isDir: ObjCBool = false
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
@@ -46,11 +46,11 @@ enum SkillLibrary {
             return .init(text: items.joined(separator: "\n"), ok: true)
         }
         guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-            return .init(text: "Okunamadı: \(rel)", ok: false)
+            return .init(text: L("Okunamadı: \(rel)"), ok: false)
         }
         let head = rel == "SKILL.md"
-            ? "Beceri klasörü: \(s.folder.path)\nİçindeki dosyalar: \(listing(s.folder))\n\n" : ""
-        let body = text.count > maxChars ? String(text.prefix(maxChars)) + "\n[… devamı kesildi]" : text
+            ? L("Beceri klasörü: \(s.folder.path)\nİçindeki dosyalar: \(listing(s.folder))\n\n") : ""
+        let body = text.count > maxChars ? String(text.prefix(maxChars)) + L("\n[… devamı kesildi]") : text
         return .init(text: head + body, ok: true)
     }
 

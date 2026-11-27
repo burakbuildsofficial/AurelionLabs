@@ -44,7 +44,7 @@ struct LLMClient {
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
             var text = ""
             for try await line in bytes.lines { text += line }
-            throw ClientError(message: Self.serverMessage(text) ?? "Sunucu \(http.statusCode) hatası döndü.")
+            throw ClientError(message: Self.serverMessage(text) ?? L("Sunucu \(http.statusCode) hatası döndü."))
         }
 
         var stats = GenStats()
@@ -57,7 +57,7 @@ struct LLMClient {
                   let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
 
             if let err = obj["error"] as? [String: Any] {
-                throw ClientError(message: err["message"] as? String ?? "Sunucu hatası.")
+                throw ClientError(message: err["message"] as? String ?? L("Sunucu hatası."))
             }
             if let choices = obj["choices"] as? [[String: Any]], let delta = choices.first?["delta"] as? [String: Any] {
                 if let r = delta["reasoning_content"] as? String, !r.isEmpty {
@@ -106,10 +106,10 @@ struct LLMClient {
         let (data, response) = try await URLSession.shared.data(for: req)
         let text = String(decoding: data, as: UTF8.self)
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-            throw ClientError(message: Self.serverMessage(text) ?? "Sunucu \(http.statusCode) hatası döndü.")
+            throw ClientError(message: Self.serverMessage(text) ?? L("Sunucu \(http.statusCode) hatası döndü."))
         }
         guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw ClientError(message: "Sunucudan anlaşılmayan cevap geldi.")
+            throw ClientError(message: L("Sunucudan anlaşılmayan cevap geldi."))
         }
         var out = Completion()
         if let msg = (obj["choices"] as? [[String: Any]])?.first?["message"] as? [String: Any] {

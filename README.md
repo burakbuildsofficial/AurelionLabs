@@ -27,8 +27,7 @@ I wanted to know how far a 24 GB MacBook can go with a modern MoE model ([Inklin
 - **Benchmarks.** 35 automatic tests across reasoning, instructions, Turkish, code, vision, tool calls, multi-step agent tasks and long context. The 8 agent tests run the real tools in a temporary folder and check the files the model leaves behind. Results are saved, and you can export a shareable 1600×900 result card.
 - **Presets and sampling.** Temperature, top-p, min-p, top-k, max tokens and system prompt. The app remembers the last preset per model.
 - **Themes.** System, light and dark, with five accent colors.
-
-> The interface is currently in Turkish. An English localization is the most wanted contribution, see [issues](../../issues).
+- **English and Turkish.** Switch the language in Settings › Appearance; it applies instantly, no restart. The first launch follows your system language. Benchmark prompts stay in Turkish on purpose, so results stay comparable.
 
 ## Quick start
 
@@ -105,7 +104,7 @@ Please share your numbers (chip, RAM, model, tok/s) in [Discussions](../../discu
 ```
 Sources/AurelionLabs/
   App.swift                    window, menus, shortcuts
-  Design/                      theme tokens, motion
+  Design/                      theme tokens, motion, Localization (English strings)
   Model/                       chat, presets, test suite
   Services/ServerManager       llama-server / Atomic process, one-click switching
   Services/LLMClient           OpenAI-compatible streaming client
@@ -133,6 +132,7 @@ Apple Silicon Mac'te yerel GGUF modellerini çalıştırmak için yerli bir macO
 - **Tek tık modlar:** Hızlı sohbet (Atomic, 4K), Genel (16K, resim), Uzun metin (32K)
 - **Belgeler:** klasör ya da PDF sürükle, hepsini özetle ya da soru sor; cevaplar `[1]` kaynaklı gelir
 - **Ajan:** hesap makinesi, saat, seçtiğin klasörde dosya okuma/yazma ve terminal; yazma ve komut her seferinde onay ister. Kurulu Claude Code becerilerini okuyabilir; bozuk araç çağrılarını onarır
+- **Dil:** Türkçe ve İngilizce; Ayarlar › Görünüm'den anında değişir
 - **Testler:** 35 otomatik test (8'i çok adımlı ajan testi) ve paylaşılabilir sonuç kartı
 - **Karşılaştırma:** aynı 31 testte Inkling 2 Mini IQ3_XXS 30/31 (27,2 dk), Bonsai 2.5 27B Q2_0 28/31 (14,3 dk); ikisi de ajan testlerinde 8/8
 

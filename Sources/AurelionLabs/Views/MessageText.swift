@@ -68,7 +68,7 @@ struct CodeBlock: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(language.isEmpty ? "kod" : language)
+                Text(language.isEmpty ? L("kod") : language)
                     .font(Theme.Font.small.weight(.semibold))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
@@ -78,12 +78,12 @@ struct CodeBlock: View {
                     copied = true
                     Task { try? await Task.sleep(for: .seconds(1.5)); copied = false }
                 } label: {
-                    Label(copied ? "Kopyalandı" : "Kopyala", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    Label(copied ? L("Kopyalandı") : L("Kopyala"), systemImage: copied ? "checkmark" : "doc.on.doc")
                         .font(Theme.Font.small.weight(.semibold))
                         .foregroundStyle(copied ? Theme.Tone.good.color : Theme.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Kodu kopyala")
+                .accessibilityLabel(L("Kodu kopyala"))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 7)

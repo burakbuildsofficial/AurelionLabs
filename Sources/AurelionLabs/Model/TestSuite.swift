@@ -7,14 +7,14 @@ enum TestCategory: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .reasoning: "Mantık ve matematik"
-        case .instructions: "Talimata uyma"
-        case .turkish: "Türkçe"
-        case .code: "Kod"
-        case .vision: "Görsel"
-        case .tools: "Araç kullanma"
-        case .agent: "Ajan (çok adımlı)"
-        case .longContext: "Uzun bağlam"
+        case .reasoning: L("Mantık ve matematik")
+        case .instructions: L("Talimata uyma")
+        case .turkish: L("Türkçe")
+        case .code: L("Kod")
+        case .vision: L("Görsel")
+        case .tools: L("Araç kullanma")
+        case .agent: L("Ajan (çok adımlı)")
+        case .longContext: L("Uzun bağlam")
         }
     }
 
@@ -75,7 +75,7 @@ enum Checks {
             let text = out.content
             let pattern = "(?<![0-9.,])" + NSRegularExpression.escapedPattern(for: expected) + "(?![0-9])"
             let ok = text.range(of: pattern, options: .regularExpression) != nil
-            return Verdict(passed: ok, detail: ok ? "Cevapta \(expected) var." : "Beklenen \(expected), cevapta yok.")
+            return Verdict(passed: ok, detail: ok ? L("Cevapta \(expected) var.") : L("Beklenen \(expected), cevapta yok."))
         }
     }
 
@@ -84,8 +84,8 @@ enum Checks {
             let t = norm(out.content)
             let missing = needles.filter { !t.contains(norm($0)) }
             return missing.isEmpty
-                ? Verdict(passed: true, detail: "Beklenen ifadeler var: \(needles.joined(separator: ", ")).")
-                : Verdict(passed: false, detail: "Eksik: \(missing.joined(separator: ", ")).")
+                ? Verdict(passed: true, detail: L("Beklenen ifadeler var: \(needles.joined(separator: ", "))."))
+                : Verdict(passed: false, detail: L("Eksik: \(missing.joined(separator: ", "))."))
         }
     }
 
@@ -93,8 +93,8 @@ enum Checks {
         { out in
             let t = norm(out.content)
             let hit = needles.first { t.contains(norm($0)) }
-            return Verdict(passed: hit != nil, detail: hit.map { "Cevapta “\($0)” var." }
-                           ?? "Şunlardan hiçbiri yok: \(needles.joined(separator: ", ")).")
+            return Verdict(passed: hit != nil, detail: hit.map { L("Cevapta “\($0)” var.") }
+                           ?? L("Şunlardan hiçbiri yok: \(needles.joined(separator: ", "))."))
         }
     }
 
@@ -132,7 +132,7 @@ enum Checks {
                     let ok = proc.terminationStatus == 0 && s.contains("TESTLER_GECTI")
                     let tail = s.split(separator: "\n").suffix(3).joined(separator: " ")
                     cont.resume(returning: Verdict(passed: ok, detail: ok ? "Kod çalıştı, tüm testler geçti."
-                                                   : "Kod testleri geçemedi: \(tail.prefix(240))"))
+                                                   : L("Kod testleri geçemedi: \(tail.prefix(240))")))
                 }
                 do { try p.run() } catch {
                     cont.resume(returning: Verdict(passed: false, detail: "python3 çalıştırılamadı."))
@@ -149,13 +149,13 @@ enum Checks {
                 let names = out.toolCalls.map(\.name)
                 return Verdict(passed: false, detail: names.isEmpty
                                ? "Araç çağırmadı, doğrudan cevap verdi."
-                               : "Yanlış araç çağırdı: \(names.joined(separator: ", ")).")
+                               : L("Yanlış araç çağırdı: \(names.joined(separator: ", "))."))
             }
             let args = norm(call.arguments)
             let missing = argsContain.filter { !args.contains(norm($0)) }
             return missing.isEmpty
-                ? Verdict(passed: true, detail: "\(name)(\(call.arguments)) çağırdı.")
-                : Verdict(passed: false, detail: "\(name) çağırdı ama argüman eksik: \(call.arguments)")
+                ? Verdict(passed: true, detail: L("\(name)(\(call.arguments)) çağırdı."))
+                : Verdict(passed: false, detail: L("\(name) çağırdı ama argüman eksik: \(call.arguments)"))
         }
     }
 
@@ -207,27 +207,27 @@ enum TestSuite {
         var t: [TestCase] = []
 
         // Mantık ve matematik
-        t.append(TestCase(id: "r1", category: .reasoning, title: "Bacak sayısı",
+        t.append(TestCase(id: "r1", category: .reasoning, title: L("Bacak sayısı"),
                           prompt: "Bir çiftlikte 15 tavuk ve 12 inek var. Toplam kaç bacak vardır? Son satırda sadece sayıyı yaz.",
                           check: Checks.number("78")))
-        t.append(TestCase(id: "r2", category: .reasoning, title: "Denklem",
+        t.append(TestCase(id: "r2", category: .reasoning, title: L("Denklem"),
                           prompt: "Bir sayının 3 katının 7 fazlası 52 ise bu sayı kaçtır? Son satırda sadece sayıyı yaz.",
                           check: Checks.number("15")))
-        t.append(TestCase(id: "r3", category: .reasoning, title: "Saat hesabı",
+        t.append(TestCase(id: "r3", category: .reasoning, title: L("Saat hesabı"),
                           prompt: "Bir tren 14:35'te kalkıyor ve yolculuk 3 saat 50 dakika sürüyor. Tren saat kaçta varır? Sadece SS:DD biçiminde yaz.",
                           check: Checks.containsAny(["18:25"])))
-        t.append(TestCase(id: "r4", category: .reasoning, title: "Harf sayma",
+        t.append(TestCase(id: "r4", category: .reasoning, title: L("Harf sayma"),
                           prompt: "\"mississippi\" kelimesinde kaç tane 's' harfi var? Son satırda sadece sayıyı yaz.",
                           check: Checks.number("4")))
-        t.append(TestCase(id: "r5", category: .reasoning, title: "Takvim",
+        t.append(TestCase(id: "r5", category: .reasoning, title: L("Takvim"),
                           prompt: "23 Kasım 2026 Pazartesi günüdür. Bu tarihten 100 gün sonra haftanın hangi günüdür? Sadece gün adını yaz.",
                           check: Checks.containsAny(["çarşamba"])))
-        t.append(TestCase(id: "r6", category: .reasoning, title: "Tuzaklı soru",
+        t.append(TestCase(id: "r6", category: .reasoning, title: L("Tuzaklı soru"),
                           prompt: "Bir sopa ve bir top birlikte 110 TL. Sopa toptan 100 TL daha pahalı. Top kaç TL? Son satırda sadece sayıyı yaz.",
                           check: Checks.number("5")))
 
         // Talimata uyma
-        t.append(TestCase(id: "i1", category: .instructions, title: "Tam 3 madde",
+        t.append(TestCase(id: "i1", category: .instructions, title: L("Tam 3 madde"),
                           prompt: "Sağlıklı uyku için tam olarak 3 öneri yaz. Her satır \"- \" ile başlasın. Başlık, giriş veya kapanış cümlesi yazma.",
                           check: { out in
                               let lines = out.content.split(whereSeparator: \.isNewline)
@@ -236,7 +236,7 @@ enum TestSuite {
                               return Verdict(passed: ok, detail: ok ? "Tam 3 madde, fazladan satır yok."
                                              : "\(lines.count) dolu satır var; hepsi \"- \" ile başlamalı ve tam 3 olmalı.")
                           }))
-        t.append(TestCase(id: "i2", category: .instructions, title: "Sadece JSON",
+        t.append(TestCase(id: "i2", category: .instructions, title: L("Sadece JSON"),
                           prompt: "Ankara hakkında yalnızca geçerli bir JSON nesnesi döndür. Alanlar: \"sehir\" (metin), \"plaka\" (sayı), \"baskent_mi\" (true/false). Kod bloğu ya da açıklama yazma.",
                           check: { out in
                               let s = out.content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -247,14 +247,14 @@ enum TestSuite {
                               return Verdict(passed: ok, detail: ok ? "Geçerli JSON, alanlar doğru."
                                              : "JSON geçerli ama alanlar yanlış: \(s.prefix(160))")
                           }))
-        t.append(TestCase(id: "i3", category: .instructions, title: "Büyük harf",
+        t.append(TestCase(id: "i3", category: .instructions, title: L("Büyük harf"),
                           prompt: "Türkiye'nin başkenti neresidir? Cevabının tamamını BÜYÜK HARFLERLE ve tek kelimeyle yaz.",
                           check: { out in
                               let s = out.content.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
                               let ok = s == "ANKARA"
                               return Verdict(passed: ok, detail: ok ? "Tam olarak ANKARA yazdı." : "Beklenen “ANKARA”, gelen “\(s.prefix(60))”.")
                           }))
-        t.append(TestCase(id: "i4", category: .instructions, title: "Kelime sınırı",
+        t.append(TestCase(id: "i4", category: .instructions, title: L("Kelime sınırı"),
                           prompt: "Yapay zekâyı en fazla 12 kelimeyle tanımla. Tek cümle yaz.",
                           check: { out in
                               let n = out.content.split(whereSeparator: { $0.isWhitespace }).count
@@ -262,30 +262,30 @@ enum TestSuite {
                           }))
 
         // Türkçe
-        t.append(TestCase(id: "t1", category: .turkish, title: "Deyim",
+        t.append(TestCase(id: "t1", category: .turkish, title: L("Deyim"),
                           prompt: "\"Etekleri zil çalmak\" deyimi ne anlama gelir? Tek cümleyle açıkla.",
                           check: Checks.containsAny(["sevin", "mutlu", "neşe", "keyif"])))
-        t.append(TestCase(id: "t2", category: .turkish, title: "Çeviri",
+        t.append(TestCase(id: "t2", category: .turkish, title: L("Çeviri"),
                           prompt: "Translate into natural Turkish, output only the translation: \"The cat is sleeping on the warm windowsill.\"",
                           check: Checks.containsAll(["kedi", "uyu", "pencere"])))
-        t.append(TestCase(id: "t3", category: .turkish, title: "Ünlü uyumu",
+        t.append(TestCase(id: "t3", category: .turkish, title: L("Ünlü uyumu"),
                           prompt: "\"kitap\" kelimesinin çoğul ve belirtme hâli (-ları/-leri) eklenmiş biçimini yaz. Sadece kelimeyi yaz.",
                           check: Checks.containsAny(["kitapları"])))
 
         // Kod
-        t.append(TestCase(id: "c1", category: .code, title: "Asal sayı",
+        t.append(TestCase(id: "c1", category: .code, title: L("Asal sayı"),
                           prompt: "Python'da is_prime(n) fonksiyonu yaz. n tam sayıdır, 2'den küçükse False döner. Sadece kodu bir ```python bloğunda ver.",
                           check: Checks.python(tests: """
                           assert [n for n in range(30) if is_prime(n)] == [2,3,5,7,11,13,17,19,23,29]
                           assert is_prime(7919) and not is_prime(7917) and not is_prime(-7) and not is_prime(1)
                           """)))
-        t.append(TestCase(id: "c2", category: .code, title: "Parantez dengesi",
+        t.append(TestCase(id: "c2", category: .code, title: L("Parantez dengesi"),
                           prompt: "Python'da balanced(s) fonksiyonu yaz: s içindeki (), [], {} parantezleri doğru açılıp kapanıyorsa True döndürsün; diğer karakterleri yok saysın. Sadece kodu bir ```python bloğunda ver.",
                           check: Checks.python(tests: """
                           assert balanced("") and balanced("a(b[c]{d}e)f") and balanced("{[()()]}")
                           assert not balanced("(]") and not balanced("([)]") and not balanced("((") and not balanced(")(")
                           """)))
-        t.append(TestCase(id: "c3", category: .code, title: "Roma rakamı",
+        t.append(TestCase(id: "c3", category: .code, title: L("Roma rakamı"),
                           prompt: "Python'da to_roman(n) fonksiyonu yaz (1 ≤ n ≤ 3999), Roma rakamını metin olarak döndürsün. Sadece kodu bir ```python bloğunda ver.",
                           check: Checks.python(tests: """
                           assert to_roman(1) == "I" and to_roman(4) == "IV" and to_roman(9) == "IX"
@@ -293,34 +293,34 @@ enum TestSuite {
                           """)))
 
         // Görsel (resimler uygulamada çizilir, cevap kesin bilinir)
-        t.append(TestCase(id: "v1", category: .vision, title: "Yazı okuma",
+        t.append(TestCase(id: "v1", category: .vision, title: L("Yazı okuma"),
                           prompt: "Resimdeki etiket kodunu aynen yaz. Sadece kodu yaz.",
                           image: { TestImages.label() },
                           check: Checks.containsAll(["7429", "alfa"])))
-        t.append(TestCase(id: "v2", category: .vision, title: "Sayma",
+        t.append(TestCase(id: "v2", category: .vision, title: L("Sayma"),
                           prompt: "Resimde kaç tane kırmızı daire var? Son satırda sadece sayıyı yaz.",
                           image: { TestImages.shapes() },
                           check: Checks.number("5")))
-        t.append(TestCase(id: "v3", category: .vision, title: "Grafik okuma",
+        t.append(TestCase(id: "v3", category: .vision, title: L("Grafik okuma"),
                           prompt: "Bu çubuk grafikte en yüksek değere sahip ay hangisi? Sadece ay adını yaz.",
                           image: { TestImages.chart() },
                           check: Checks.containsAny(["mart"])))
-        t.append(TestCase(id: "v4", category: .vision, title: "Tablo okuma",
+        t.append(TestCase(id: "v4", category: .vision, title: L("Tablo okuma"),
                           prompt: "Tabloya göre 2 kahve ve 1 poğaçanın toplam fiyatı kaç TL? Son satırda sadece sayıyı yaz.",
                           image: { TestImages.table() },
                           check: Checks.number("115")))
 
         // Araç kullanma
-        t.append(TestCase(id: "a1", category: .tools, title: "Doğru aracı seçme",
+        t.append(TestCase(id: "a1", category: .tools, title: L("Doğru aracı seçme"),
                           prompt: "İzmir'de şu an hava nasıl?",
                           usesTools: true, check: Checks.toolCall("hava_durumu", argsContain: ["izmir"])))
-        t.append(TestCase(id: "a2", category: .tools, title: "Hesap aracı",
+        t.append(TestCase(id: "a2", category: .tools, title: L("Hesap aracı"),
                           prompt: "48271 ile 9133'ü çarpıp sonuca 17 ekle. Kesin sonuç lazım.",
                           usesTools: true, check: Checks.toolCall("hesapla", argsContain: ["48271", "9133", "17"])))
-        t.append(TestCase(id: "a3", category: .tools, title: "Argüman çıkarma",
+        t.append(TestCase(id: "a3", category: .tools, title: L("Argüman çıkarma"),
                           prompt: "Bugün 23 Kasım 2026. Yarın öğleden sonra 3'te diş hekimi randevum var, takvimime ekler misin?",
                           usesTools: true, check: Checks.toolCall("takvime_ekle", argsContain: ["2026-11-24", "15:00"])))
-        t.append(TestCase(id: "a4", category: .tools, title: "Gereksiz araç kullanmama",
+        t.append(TestCase(id: "a4", category: .tools, title: L("Gereksiz araç kullanmama"),
                           prompt: "Merhaba! Bana kısa bir günaydın mesajı yazar mısın?",
                           usesTools: true, check: { out in
                               Verdict(passed: out.toolCalls.isEmpty && !out.content.isEmpty,
@@ -329,14 +329,14 @@ enum TestSuite {
                           }))
 
         // Ajan (çok adımlı): gerçek araçlar, geçici klasör. Beyin araçları testte sahte cevap verir, kasaya yazılmaz.
-        t.append(TestCase(id: "g1", category: .agent, title: "Dosyadan bilgi bulma",
+        t.append(TestCase(id: "g1", category: .agent, title: L("Dosyadan bilgi bulma"),
                           prompt: "Çalışma klasöründeki notlar.txt dosyasında toplantı kodu yazıyor. Kod nedir? Sadece kodu yaz.",
                           agentFiles: ["notlar.txt": "Alışveriş: süt, ekmek\nToplantı kodu: KESTANE-42\nAra: Mehmet"],
                           maxTokens: 4096, check: { out in
                               let ok = Checks.called(out, "dosya_oku") && Checks.norm(out.content).contains("kestane-42")
                               return Verdict(passed: ok, detail: ok ? "Dosyayı okudu, kodu buldu." : "Adımlar: \(Checks.callList(out)).")
                           }))
-        t.append(TestCase(id: "g2", category: .agent, title: "Klasörde dosya arama",
+        t.append(TestCase(id: "g2", category: .agent, title: L("Klasörde dosya arama"),
                           prompt: "Çalışma klasöründe projenin ayar dosyası bir yerde duruyor. Bul ve hangi portu kullandığını söyle. Son satırda sadece port numarasını yaz.",
                           agentFiles: ["README.md": "Deneme projesi.", "kaynak/main.py": "print('merhaba')",
                                        "kaynak/ayarlar/sunucu.json": "{\"host\": \"127.0.0.1\", \"port\": 8123}"],
@@ -344,7 +344,7 @@ enum TestSuite {
                               let ok = Checks.called(out, "dosya_oku", argsContain: ["sunucu.json"]) && out.content.contains("8123")
                               return Verdict(passed: ok, detail: ok ? "Klasörü gezip ayar dosyasını buldu." : "Adımlar: \(Checks.callList(out)).")
                           }))
-        t.append(TestCase(id: "g3", category: .agent, title: "Oku, hesapla, yaz",
+        t.append(TestCase(id: "g3", category: .agent, title: L("Oku, hesapla, yaz"),
                           prompt: "satislar.csv dosyasındaki adet sütununun toplamını bul ve sonucu toplam.txt dosyasına sadece sayı olarak yaz.",
                           agentFiles: ["satislar.csv": "urun,adet\nkalem,17\ndefter,42\nsilgi,8\ncetvel,25\n"],
                           maxTokens: 4096, check: { out in
@@ -352,7 +352,7 @@ enum TestSuite {
                               return Verdict(passed: f == "92", detail: f == nil ? "toplam.txt yazılmadı. Adımlar: \(Checks.callList(out))."
                                              : f == "92" ? "toplam.txt = 92." : "toplam.txt içeriği \"\(f!.prefix(40))\", beklenen 92.")
                           }))
-        t.append(TestCase(id: "g4", category: .agent, title: "Dosya düzenleme",
+        t.append(TestCase(id: "g4", category: .agent, title: L("Dosya düzenleme"),
                           prompt: "ayar.txt dosyasında tema satırını koyu olarak değiştir. Diğer satırlara dokunma.",
                           agentFiles: ["ayar.txt": "dil=tr\ntema=acik\nboyut=14\n"],
                           maxTokens: 4096, check: { out in
@@ -361,7 +361,7 @@ enum TestSuite {
                               let ok = lines.contains("tema=koyu") && lines.contains("dil=tr") && lines.contains("boyut=14") && lines.count == 3
                               return Verdict(passed: ok, detail: ok ? "Yalnız tema satırını değiştirdi." : "ayar.txt: \(f.replacingOccurrences(of: "\n", with: " ⏎ "))")
                           }))
-        t.append(TestCase(id: "g5", category: .agent, title: "Adı verilen beceriyi kullanma",
+        t.append(TestCase(id: "g5", category: .agent, title: L("Adı verilen beceriyi kullanma"),
                           prompt: "scrapling-official becerisinin talimatına bak: bir web sayfasını Markdown dosyasına kaydetmek için hangi komutu, hangi zorunlu seçenekle kullanmalıyım? Tek satır komut yaz.",
                           agentFiles: [:], maxTokens: 6144, check: { out in
                               let used = Checks.called(out, "beceri_oku", argsContain: ["scrapling"])
@@ -369,19 +369,19 @@ enum TestSuite {
                               return Verdict(passed: ok, detail: !used ? "Beceriyi açmadı. Adımlar: \(Checks.callList(out))."
                                              : ok ? "Beceriyi okudu, zorunlu --ai-targeted seçeneğini buldu." : "Beceriyi okudu ama --ai-targeted yok.")
                           }))
-        t.append(TestCase(id: "g6", category: .agent, title: "Uygun beceriyi kendi seçme",
+        t.append(TestCase(id: "g6", category: .agent, title: L("Uygun beceriyi kendi seçme"),
                           prompt: "Three.js sahnemde gölgelerde çizgili lekeler (shadow acne) çıkıyor. Kurulu becerilerden uygun olanına bakarak nasıl düzelteceğimi kısaca söyle.",
                           agentFiles: [:], maxTokens: 6144, check: { out in
                               let ok = Checks.called(out, "beceri_oku", argsContain: ["threejs-lighting"]) && Checks.norm(out.content).contains("bias")
                               return Verdict(passed: ok, detail: ok ? "threejs-lighting becerisini seçti, bias ayarını söyledi." : "Adımlar: \(Checks.callList(out)).")
                           }))
-        t.append(TestCase(id: "g7", category: .agent, title: "Beyin'den hatırlama",
+        t.append(TestCase(id: "g7", category: .agent, title: L("Beyin'den hatırlama"),
                           prompt: "Inkling IQ3_XXS modeli 16K bağlamda testlerde kaç puan almıştı? Benim notlarıma bak.",
                           agentFiles: [:], maxTokens: 4096, check: { out in
                               let ok = Checks.called(out, "beyin_ara") && out.content.contains("25/27")
                               return Verdict(passed: ok, detail: ok ? "Beyin'de aradı, 25/27'yi buldu." : "Adımlar: \(Checks.callList(out)).")
                           }))
-        t.append(TestCase(id: "g8", category: .agent, title: "Beyin'e kaydetme",
+        t.append(TestCase(id: "g8", category: .agent, title: L("Beyin'e kaydetme"),
                           prompt: "Bugün Bonsai 2.5 27B modelini indirdim, Q2_0 dosyası 7,67 GB. Bunu notlarıma proje olarak kaydet.",
                           agentFiles: [:], maxTokens: 4096, check: { out in
                               let ok = Checks.called(out, "beyin_kaydet", argsContain: ["bonsai", "7,67"])
@@ -394,7 +394,7 @@ enum TestSuite {
             let tokens = Int(Double(contextSize) * frac)
             let hay = Haystack.make(approxTokens: tokens, needleAt: [0.2, 0.5, 0.8][i])
             t.append(TestCase(id: "l\(i + 1)", category: .longContext,
-                              title: "Samanlıkta iğne · ~\(tokens / 1000)K token",
+                              title: L("Samanlıkta iğne · ~\(tokens / 1000)K token"),
                               prompt: hay.text + "\n\nYukarıdaki metinde gizli kasa şifresi geçiyor. Şifre nedir? Sadece şifreyi yaz.",
                               maxTokens: 4096,
                               check: Checks.containsAll([hay.secret])))

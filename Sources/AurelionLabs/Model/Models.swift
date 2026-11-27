@@ -18,15 +18,18 @@ struct Preset: Codable, Identifiable, Equatable, Hashable {
     var params: SamplingParams
     var builtIn = false
 
-    static let defaults: [Preset] = [
+    /// Hazır ön ayarların adı seçili dilde gösterilir; `name` kimlik olarak Türkçe kalır.
+    var displayName: String { builtIn ? L(raw: name) : name }
+
+    static var defaults: [Preset] { [
         Preset(name: "Önerilen", params: .recommended, builtIn: true),
         Preset(name: "Türkçe asistan",
                params: SamplingParams(temperature: 0.7, topP: 0.95, topK: 0, minP: 0.05, maxTokens: 4096,
-                                      systemPrompt: "Her zaman akıcı ve doğal bir Türkçeyle, kısa ve net cevap ver."),
+                                      systemPrompt: L("Her zaman akıcı ve doğal bir Türkçeyle, kısa ve net cevap ver.")),
                builtIn: true),
         Preset(name: "Kod yardımcısı",
                params: SamplingParams(temperature: 0.3, topP: 0.95, topK: 0, minP: 0.05, maxTokens: 8192,
-                                      systemPrompt: "Deneyimli bir yazılımcısın. Çalışan, açıklamalı kod ver; gereksiz laf etme."),
+                                      systemPrompt: L("Deneyimli bir yazılımcısın. Çalışan, açıklamalı kod ver; gereksiz laf etme.")),
                builtIn: true),
         // Bonsai 2.5 model kartı: sıcaklık 1.0, top-p 0.95, top-k 20; uzun düşündüğü için çıktı sınırı en az 16K.
         Preset(name: "Bonsai",
@@ -37,7 +40,7 @@ struct Preset: Codable, Identifiable, Equatable, Hashable {
                params: SamplingParams(temperature: 1.3, topP: 1.0, topK: 0, minP: 0.02, maxTokens: 4096,
                                       systemPrompt: ""),
                builtIn: true),
-    ]
+    ] }
 }
 
 /// Bir cevabın ölçümleri (llama.cpp `timings` alanından).
@@ -104,7 +107,7 @@ extension ChatMessage {
         let docs = documents.map { d in
             "<dosya ad=\"\(d.name)\"\(d.truncated ? " kısaltıldı=\"evet\"" : "")>\n\(d.text)\n</dosya>"
         }.joined(separator: "\n\n")
-        return docs + "\n\n" + (text.isEmpty ? "Bu dosyayı özetle." : text)
+        return docs + "\n\n" + (text.isEmpty ? L("Bu dosyayı özetle.") : text)
     }
 }
 
@@ -127,24 +130,24 @@ struct Conversation: Codable, Identifiable, Equatable {
     /// Sohbeti okunur Markdown'a çevirir (dışa aktarma için).
     var markdown: String {
         var out = "# \(title)\n\n"
-        if let model { out += "_Model: \(model)_\n\n" }
+        if let model { out += L("_Model: \(model)_\n\n") }
         for m in messages {
-            if m.role == .tool { out += "> 🔧 \(m.toolName ?? "araç") sonucu\n\n"; continue }
-            out += m.role == .user ? "## Sen\n\n" : "## Model\n\n"
+            if m.role == .tool { out += L("> 🔧 \(m.toolName ?? L("araç")) sonucu\n\n"); continue }
+            out += m.role == .user ? L("## Sen\n\n") : L("## Model\n\n")
             for c in m.toolCalls ?? [] { out += "> 🔧 \(c.name)(\(c.arguments))\n\n" }
             for d in m.documents { out += "> 📎 \(d.name)\n\n" }
-            if !m.images.isEmpty { out += "> 🖼 \(m.images.count) resim\n\n" }
+            if !m.images.isEmpty { out += L("> 🖼 \(m.images.count) resim\n\n") }
             out += m.text + "\n\n"
         }
         return out
     }
 
     static func makeTitle(from messages: [ChatMessage]) -> String {
-        guard let first = messages.first(where: { $0.role == .user }) else { return "Yeni sohbet" }
+        guard let first = messages.first(where: { $0.role == .user }) else { return L("Yeni sohbet") }
         let t = first.text.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "\n", with: " ")
         if !t.isEmpty { return t.count > 48 ? String(t.prefix(48)) + "…" : t }
         if let d = first.documents.first { return d.name }
-        return first.images.isEmpty ? "Yeni sohbet" : "Resim sorusu"
+        return first.images.isEmpty ? L("Yeni sohbet") : L("Resim sorusu")
     }
 }

@@ -28,21 +28,21 @@ struct RootView: View {
                     ModelStatusDot()
                     ModelMenu()
                     if store.mode == .chat {
-                        Button("Yeni sohbet", systemImage: "square.and.pencil") { store.newChat() }
-                            .help("Yeni sohbet (⌘N)")
+                        Button(L("Yeni sohbet"), systemImage: "square.and.pencil") { store.newChat() }
+                            .help(L("Yeni sohbet (⌘N)"))
                     }
                 }
             }
         }
-        .searchable(text: $store.historyQuery, placement: .sidebar, prompt: "Sohbetlerde ara")
-        .id(store.palette)          // renk değişince her şeyi yeni renkle çiz
+        .searchable(text: $store.historyQuery, placement: .sidebar, prompt: L("Sohbetlerde ara"))
+        .id("\(store.palette.rawValue)-\(store.language.rawValue)")   // renk ya da dil değişince her şeyi yeniden çiz
         .tint(Theme.primary)
         .onAppear { store.appearance.apply() }
     }
 
     private var title: String {
         switch store.mode {
-        case .chat: store.conversations.first { $0.id == store.currentID }?.title ?? "Yeni sohbet"
+        case .chat: store.conversations.first { $0.id == store.currentID }?.title ?? L("Yeni sohbet")
         default: store.mode.title
         }
     }
@@ -51,13 +51,13 @@ struct RootView: View {
         switch store.mode {
         case .chat:
             if let c = store.conversations.first(where: { $0.id == store.currentID }) {
-                return "\(c.messages.count) mesaj"
+                return L("\(c.messages.count) mesaj")
             }
-            return "Tamamen bu Mac'te, internet yok"
-        case .documents: return "Klasör ya da dosyaları özetle, soru sor, kaynağını gör"
-        case .compare: return "Aynı soru, iki ön ayar, yan yana"
-        case .tests: return "Modelin sınırlarını otomatik testlerle ölç"
-        case .settings: return "Modeller, ön ayarlar, sunucu ve görünüm"
+            return L("Tamamen bu Mac'te, internet yok")
+        case .documents: return L("Klasör ya da dosyaları özetle, soru sor, kaynağını gör")
+        case .compare: return L("Aynı soru, iki ön ayar, yan yana")
+        case .tests: return L("Modelin sınırlarını otomatik testlerle ölç")
+        case .settings: return L("Modeller, ön ayarlar, sunucu ve görünüm")
         }
     }
 }

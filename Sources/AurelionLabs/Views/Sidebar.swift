@@ -19,7 +19,7 @@ struct Sidebar: View {
             let list = store.filteredConversations
             let pinned = list.filter(\.isPinned)
             if !pinned.isEmpty {
-                Section("Sabitlenenler") { ForEach(pinned) { row($0) } }
+                Section(L("Sabitlenenler")) { ForEach(pinned) { row($0) } }
             }
             ForEach(Self.groups(list.filter { !$0.isPinned }), id: \.title) { g in
                 Section(g.title) { ForEach(g.items) { row($0) } }
@@ -27,8 +27,8 @@ struct Sidebar: View {
             if list.isEmpty {
                 Section {
                     Text(store.historyQuery.isEmpty
-                         ? "Sohbetlerin burada birikir. İlk mesajla kaydedilir."
-                         : "Bu aramayla eşleşen sohbet yok.")
+                         ? L("Sohbetlerin burada birikir. İlk mesajla kaydedilir.")
+                         : L("Bu aramayla eşleşen sohbet yok."))
                         .font(Theme.Font.caption)
                         .foregroundStyle(Theme.textTertiary)
                         .selectionDisabled()
@@ -36,10 +36,10 @@ struct Sidebar: View {
             }
         }
         .listStyle(.sidebar)
-        .alert("Sohbeti yeniden adlandır", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-            TextField("Ad", text: $newTitle)
-            Button("Kaydet") { if let r = renaming { store.rename(r, to: newTitle) }; renaming = nil }
-            Button("Vazgeç", role: .cancel) { renaming = nil }
+        .alert(L("Sohbeti yeniden adlandır"), isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField(L("Ad"), text: $newTitle)
+            Button(L("Kaydet")) { if let r = renaming { store.rename(r, to: newTitle) }; renaming = nil }
+            Button(L("Vazgeç"), role: .cancel) { renaming = nil }
         }
     }
 
@@ -68,7 +68,7 @@ struct Sidebar: View {
                 Text(c.title).lineLimit(1)
             }
             .font(Theme.Font.callout.weight(.medium))
-            Text(c.preview.isEmpty ? "\(c.messages.count) mesaj" : c.preview)
+            Text(c.preview.isEmpty ? L("\(c.messages.count) mesaj") : c.preview)
                 .font(Theme.Font.small)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -85,13 +85,13 @@ struct Sidebar: View {
         .padding(.vertical, 3)
         .tag(Item.chat(c.id))
         .contextMenu {
-            Button(c.isPinned ? "Sabitlemeyi kaldır" : "Sabitle", systemImage: c.isPinned ? "pin.slash" : "pin") {
+            Button(c.isPinned ? L("Sabitlemeyi kaldır") : L("Sabitle"), systemImage: c.isPinned ? "pin.slash" : "pin") {
                 store.togglePin(c)
             }
-            Button("Yeniden adlandır", systemImage: "pencil") { newTitle = c.title; renaming = c }
-            Button("Markdown olarak kaydet…", systemImage: "square.and.arrow.down") { store.export(c) }
+            Button(L("Yeniden adlandır"), systemImage: "pencil") { newTitle = c.title; renaming = c }
+            Button(L("Markdown olarak kaydet…"), systemImage: "square.and.arrow.down") { store.export(c) }
             Divider()
-            Button("Sil", systemImage: "trash", role: .destructive) { store.delete(c) }
+            Button(L("Sil"), systemImage: "trash", role: .destructive) { store.delete(c) }
         }
     }
 
@@ -101,7 +101,7 @@ struct Sidebar: View {
 
     private static func groups(_ list: [Conversation]) -> [Group] {
         let cal = Calendar.current
-        var buckets: [(String, [Conversation])] = [("Bugün", []), ("Dün", []), ("Son 7 gün", []), ("Daha eski", [])]
+        var buckets: [(String, [Conversation])] = [(L("Bugün"), []), (L("Dün"), []), (L("Son 7 gün"), []), (L("Daha eski"), [])]
         for c in list {
             let i = cal.isDateInToday(c.updated) ? 0
                 : cal.isDateInYesterday(c.updated) ? 1
@@ -120,7 +120,7 @@ struct ModelMenu: View {
         let server = store.server
         let busy = store.isGenerating || store.tests.isRunning
         Menu {
-            Section("Kullanım modu") {
+            Section(L("Kullanım modu")) {
                 ForEach(LabStore.UseMode.allCases) { mode in
                     Button { store.activate(mode) } label: {
                         Label("\(mode.title) — \(store.detail(for: mode))",
@@ -129,7 +129,7 @@ struct ModelMenu: View {
                     .disabled(busy || server.isBusy || store.model(for: mode) == nil)
                 }
             }
-            Section("Bu Mac'teki modeller") {
+            Section(L("Bu Mac'teki modeller")) {
                 ForEach(store.library.models) { m in
                     Button { store.load(m) } label: {
                         let current = m.path == server.config.modelPath
@@ -138,25 +138,25 @@ struct ModelMenu: View {
                     .disabled(busy || server.isBusy)
                 }
                 if store.library.models.isEmpty {
-                    Text("Model bulunamadı. Ayarlar › Modeller'den klasör ekle.")
+                    Text(L("Model bulunamadı. Ayarlar › Modeller'den klasör ekle."))
                 }
             }
             Divider()
             switch server.state {
             case .ready, .starting, .external:
-                Button("Modeli bellekten kaldır", systemImage: "power") { server.unload() }
+                Button(L("Modeli bellekten kaldır"), systemImage: "power") { server.unload() }
                     .disabled(busy)
             case .stopped, .failed:
-                Button("Modeli yükle", systemImage: "play.fill") { server.restart() }
+                Button(L("Modeli yükle"), systemImage: "play.fill") { server.restart() }
             case .switching:
-                Text("Model değiştiriliyor…")
+                Text(L("Model değiştiriliyor…"))
             }
-            Button("Listeyi yenile", systemImage: "arrow.clockwise") { store.library.scan() }
-            Button("Model ayarları…", systemImage: "gearshape") { store.mode = .settings }
+            Button(L("Listeyi yenile"), systemImage: "arrow.clockwise") { store.library.scan() }
+            Button(L("Model ayarları…"), systemImage: "gearshape") { store.mode = .settings }
         } label: {
             Text(title).lineLimit(1)
         }
-        .help("Modeli değiştir, yükle ya da bellekten kaldır")
+        .help(L("Modeli değiştir, yükle ya da bellekten kaldır"))
     }
 }
 
@@ -173,11 +173,11 @@ struct ModelStatusDot: View {
 
     private var help: String {
         switch store.server.state {
-        case .starting, .switching: "Model yükleniyor"
-        case .ready: "Model hazır"
-        case .external: "Model hazır (başka bir yerden açılmış sunucu)"
-        case .stopped: "Model kapalı"
-        case .failed(let m): "Model açılamadı: " + m
+        case .starting, .switching: L("Model yükleniyor")
+        case .ready: L("Model hazır")
+        case .external: L("Model hazır (başka bir yerden açılmış sunucu)")
+        case .stopped: L("Model kapalı")
+        case .failed(let m): L("Model açılamadı: ") + m
         }
     }
 
@@ -195,15 +195,15 @@ extension ModelMenu {
     var title: String {
         let name = store.currentModel.map { "\($0.family) · \($0.quant)" } ?? store.server.modelName
         switch store.server.state {
-        case .switching, .starting: return "Yükleniyor: " + name
-        case .stopped: return "Model kapalı"
-        case .failed: return "Model açılamadı"
+        case .switching, .starting: return L("Yükleniyor: ") + name
+        case .stopped: return L("Model kapalı")
+        case .failed: return L("Model açılamadı")
         default: return name
         }
     }
 
     static func label(_ m: ModelLibrary.Model) -> String {
-        "\(m.family) · \(m.quant.isEmpty ? m.fileName : m.quant) · \(StatsLine.num(m.sizeGB, 1)) GB" + (m.fileName.contains("-AD-") ? " · Atomic" : "")
+        "\(m.family) · \(m.quant.isEmpty ? m.fileName : m.quant) · \(StatsLine.num(m.sizeGB, 1)) GB" + (m.fileName.contains("-AD-") ? L(" · Atomic") : "")
     }
 }
 
@@ -215,20 +215,20 @@ struct PresetMenu: View {
         Menu {
             ForEach(store.presets) { p in
                 Button { store.apply(p) } label: {
-                    if p.id == store.activePresetID { Label(p.name, systemImage: "checkmark") } else { Text(p.name) }
+                    if p.id == store.activePresetID { Label(p.displayName, systemImage: "checkmark") } else { Text(p.displayName) }
                 }
             }
             Divider()
-            Text("Her modelde son seçtiğin ön ayar hatırlanır")
-            Button(store.showReasoning ? "Düşünmeyi gizle" : "Düşünmeyi göster", systemImage: "brain") {
+            Text(L("Her modelde son seçtiğin ön ayar hatırlanır"))
+            Button(store.showReasoning ? L("Düşünmeyi gizle") : L("Düşünmeyi göster"), systemImage: "brain") {
                 store.showReasoning.toggle()
             }
-            Button("Ön ayarları düzenle…", systemImage: "slider.horizontal.3") { store.mode = .settings }
+            Button(L("Ön ayarları düzenle…"), systemImage: "slider.horizontal.3") { store.mode = .settings }
         } label: {
-            Label(store.paramsModified ? "Özel ayar" : (store.activePreset?.name ?? "Özel ayar"),
+            Label(store.paramsModified ? L("Özel ayar") : (store.activePreset?.displayName ?? L("Özel ayar")),
                   systemImage: "slider.horizontal.3")
                 .labelStyle(.titleAndIcon)
         }
-        .help("Ön ayar: sıcaklık, token sınırı, sistem promptu")
+        .help(L("Ön ayar: sıcaklık, token sınırı, sistem promptu"))
     }
 }

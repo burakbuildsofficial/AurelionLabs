@@ -36,22 +36,22 @@ struct TestsView: View {
                         .font(.system(size: 40, weight: .bold).monospacedDigit())
                         .foregroundStyle(Theme.textPrimary)
                         .contentTransition(.numericText())
-                    Text(runner.finished.isEmpty ? "Henüz çalıştırılmadı" : "test geçti")
+                    Text(runner.finished.isEmpty ? L("Henüz çalıştırılmadı") : L("test geçti"))
                         .font(Theme.Font.callout).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: Theme.Space.s) {
                     if runner.isRunning {
-                        PrimaryButton(title: "Durdur", symbol: "stop.fill") { runner.stop() }
+                        PrimaryButton(title: L("Durdur"), symbol: "stop.fill") { runner.stop() }
                     } else {
-                        PrimaryButton(title: filter == nil ? "Tümünü çalıştır" : "Bu kategoriyi çalıştır",
+                        PrimaryButton(title: filter == nil ? L("Tümünü çalıştır") : L("Bu kategoriyi çalıştır"),
                                       symbol: "play.fill", enabled: store.server.isUsable && !store.isGenerating) {
                             runner.params = store.params
-                            runner.presetName = store.paramsModified ? "Özel ayar" : (store.activePreset?.name ?? "Özel ayar")
+                            runner.presetName = store.paramsModified ? L("Özel ayar") : (store.activePreset?.displayName ?? L("Özel ayar"))
                             runner.runAll(only: filter)
                         }
                     }
-                    Text("Ayarlar: \(store.paramsModified ? "özel ayar" : (store.activePreset?.name ?? "özel ayar")) · \(store.server.modelName)")
+                    Text(L("Ayarlar: \(store.paramsModified ? L("özel ayar") : (store.activePreset?.displayName ?? L("özel ayar"))) · \(store.server.modelName)"))
                         .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
                 }
             }
@@ -74,12 +74,12 @@ struct TestsView: View {
             }
 
             FlowRow(spacing: Theme.Space.s) {
-                Chip(title: "Tümü", selected: filter == nil) { filter = nil }
+                Chip(title: L("Tümü"), selected: filter == nil) { filter = nil }
                 ForEach(TestCategory.allCases) { c in
                     Chip(title: c.title, selected: filter == c) { filter = c }
                 }
             }
-            Text("Kod testlerinde modelin yazdığı Python kodu geçici bir klasörde 10 saniye sınırla çalıştırılır. Uzun bağlam testleri sunucunun bağlam boyutuna göre ölçeklenir.")
+            Text(L("Kod testlerinde modelin yazdığı Python kodu geçici bir klasörde 10 saniye sınırla çalıştırılır. Uzun bağlam testleri sunucunun bağlam boyutuna göre ölçeklenir."))
                 .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
         }
         .card(padding: Theme.Space.l)
@@ -109,12 +109,12 @@ struct TestsView: View {
 
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Önceki çalıştırmalar", trailing: AnyView(
-                SecondaryButton(title: cardPicks.count == 2 ? "2 sonucu karta koy" : "Sonuç kartı",
+            SectionHeader(title: L("Önceki çalıştırmalar"), trailing: AnyView(
+                SecondaryButton(title: cardPicks.count == 2 ? L("2 sonucu karta koy") : L("Sonuç kartı"),
                                 symbol: "photo.on.rectangle", tint: Theme.primary) { makeCard() }
-                    .help("Seçili 1–2 çalıştırmayı (seçim yoksa en sonuncuyu) paylaşılabilir PNG yapar ve panoya kopyalar.")
+                    .help(L("Seçili 1–2 çalıştırmayı (seçim yoksa en sonuncuyu) paylaşılabilir PNG yapar ve panoya kopyalar."))
             ))
-            Text(cardMessage ?? "Karta koymak istediğin en fazla iki çalıştırmayı soldaki daireden seç.")
+            Text(cardMessage ?? L("Karta koymak istediğin en fazla iki çalıştırmayı soldaki daireden seç."))
                 .font(Theme.Font.caption)
                 .foregroundStyle(cardMessage == nil ? Theme.textTertiary : Theme.textSecondary)
             VStack(spacing: 0) {
@@ -130,11 +130,11 @@ struct TestsView: View {
                                 .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(picked ? "Karttan çıkar" : "Karta ekle")
+                        .accessibilityLabel(picked ? L("Karttan çıkar") : L("Karta ekle"))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(ModelLibrary.family(of: h.model)) · \(ModelLibrary.quant(of: h.model))")
                                 .font(Theme.Font.callout.weight(.semibold))
-                            Text("\(h.date.formatted(date: .abbreviated, time: .shortened)) · \(h.preset) · \(h.contextSize / 1024)K bağlam")
+                            Text(L("\(h.date.formatted(date: .abbreviated, time: .shortened)) · \(h.preset) · \(h.contextSize / 1024)K bağlam"))
                                 .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
                         }
                         Spacer()
@@ -146,8 +146,8 @@ struct TestsView: View {
                             .frame(width: 56, alignment: .trailing)
                     }
                     .padding(.vertical, 10)
-                    .help(h.failedTests.isEmpty ? "Hepsi geçti" : "Geçemeyenler: " + h.failedTests.joined(separator: ", "))
-                    .contextMenu { Button("Sil", role: .destructive) { runner.deleteHistory(h) } }
+                    .help(h.failedTests.isEmpty ? L("Hepsi geçti") : L("Geçemeyenler: ") + h.failedTests.joined(separator: ", "))
+                    .contextMenu { Button(L("Sil"), role: .destructive) { runner.deleteHistory(h) } }
                 }
             }
             .card()
@@ -194,7 +194,7 @@ private struct TestRow: View {
                     }
                     Spacer()
                     if let st = result?.stats {
-                        Text(StatsLine.num(st.totalSeconds, 1) + " sn · " + StatsLine.num(st.generatedPerSecond, 1) + " t/sn")
+                        Text(StatsLine.num(st.totalSeconds, 1) + L(" sn · ") + StatsLine.num(st.generatedPerSecond, 1) + " t/sn")
                             .font(Theme.Font.stat).foregroundStyle(Theme.textTertiary)
                     }
                     Image(systemName: "chevron.down")
@@ -215,11 +215,11 @@ private struct TestRow: View {
     @ViewBuilder
     private var statusIcon: some View {
         switch result?.status ?? .idle {
-        case .idle: Image(systemName: "circle.dashed").foregroundStyle(Theme.textTertiary).accessibilityLabel("Çalıştırılmadı")
-        case .running: ProgressView().controlSize(.small).accessibilityLabel("Çalışıyor")
-        case .passed: Image(systemName: Theme.Tone.good.symbol).foregroundStyle(Theme.Tone.good.color).accessibilityLabel("Geçti")
-        case .failed: Image(systemName: Theme.Tone.danger.symbol).foregroundStyle(Theme.Tone.danger.color).accessibilityLabel("Geçemedi")
-        case .error: Image(systemName: Theme.Tone.caution.symbol).foregroundStyle(Theme.Tone.caution.color).accessibilityLabel("Hata")
+        case .idle: Image(systemName: "circle.dashed").foregroundStyle(Theme.textTertiary).accessibilityLabel(L("Çalıştırılmadı"))
+        case .running: ProgressView().controlSize(.small).accessibilityLabel(L("Çalışıyor"))
+        case .passed: Image(systemName: Theme.Tone.good.symbol).foregroundStyle(Theme.Tone.good.color).accessibilityLabel(L("Geçti"))
+        case .failed: Image(systemName: Theme.Tone.danger.symbol).foregroundStyle(Theme.Tone.danger.color).accessibilityLabel(L("Geçemedi"))
+        case .error: Image(systemName: Theme.Tone.caution.symbol).foregroundStyle(Theme.Tone.caution.color).accessibilityLabel(L("Hata"))
         }
     }
 
@@ -231,20 +231,20 @@ private struct TestRow: View {
                         .clipShape(.rect(cornerRadius: Theme.Radius.tile))
                         .overlay(RoundedRectangle(cornerRadius: Theme.Radius.tile).stroke(Theme.hairline))
                 }
-                labeled("İstem", test.category == .longContext
-                        ? "[\(test.prompt.count.formatted()) karakterlik dolgu metni] … " + String(test.prompt.suffix(90))
+                labeled(L("İstem"), test.category == .longContext
+                        ? L("[\(test.prompt.count.formatted()) karakterlik dolgu metni] … ") + String(test.prompt.suffix(90))
                         : test.prompt)
             }
             if let r = result, r.status != .idle && r.status != .running {
                 if !r.toolCalls.isEmpty {
-                    labeled("Araç çağrısı", r.toolCalls.map { "\($0.name)(\($0.arguments))" }.joined(separator: "\n"), mono: true)
+                    labeled(L("Araç çağrısı"), r.toolCalls.map { "\($0.name)(\($0.arguments))" }.joined(separator: "\n"), mono: true)
                 }
-                if !r.answer.isEmpty { labeled("Cevap", r.answer, mono: test.category == .code) }
+                if !r.answer.isEmpty { labeled(L("Cevap"), r.answer, mono: test.category == .code) }
                 if !r.reasoning.isEmpty { ReasoningPanel(text: r.reasoning) }
             }
             HStack {
                 Spacer()
-                SecondaryButton(title: "Bu testi çalıştır", symbol: "play.fill", tint: Theme.primary, action: rerun)
+                SecondaryButton(title: L("Bu testi çalıştır"), symbol: "play.fill", tint: Theme.primary, action: rerun)
                     .disabled(!canRun)
             }
         }
@@ -273,10 +273,10 @@ extension TestsView {
         let runs = picked.isEmpty ? Array(runner.history.prefix(1)) : picked
         let dir = URL(fileURLWithPath: store.server.config.modelPath).deletingLastPathComponent()
         if let url = ResultCard.export(runs, modelDir: dir) {
-            cardMessage = "Kart panoya kopyalandı ve İndirilenler'e kaydedildi: \(url.lastPathComponent)"
+            cardMessage = L("Kart panoya kopyalandı ve İndirilenler'e kaydedildi: \(url.lastPathComponent)")
             NSWorkspace.shared.activateFileViewerSelecting([url])
         } else {
-            cardMessage = "Kart çizilemedi. Tekrar dene."
+            cardMessage = L("Kart çizilemedi. Tekrar dene.")
         }
     }
 }

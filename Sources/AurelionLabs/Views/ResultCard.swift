@@ -16,7 +16,7 @@ struct ResultCard: View {
 
     let runs: [Run]
     let hardware: String
-    var family = "Yerel model"
+    var family = L("Yerel model")
 
     var body: some View {
         let best = runs.map(\.passed).max() ?? 0
@@ -27,11 +27,11 @@ struct ResultCard: View {
                     Image(nsImage: icon).resizable().frame(width: 92, height: 92)
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(family), \(Self.memoryGB) GB Mac'te").font(.system(size: 46, weight: .bold))
+                    Text(L("\(family), \(Self.memoryGB) GB Mac'te")).font(.system(size: 46, weight: .bold))
                         .foregroundStyle(Theme.textPrimary)
                     Text(runs.count > 1
-                         ? "Aynı \(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok"
-                         : "\(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok")
+                         ? L("Aynı \(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok")
+                         : L("\(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok"))
                         .font(.system(size: 24)).foregroundStyle(Theme.textSecondary)
                 }
             }
@@ -41,7 +41,7 @@ struct ResultCard: View {
                 }
             }
             HStack {
-                Text(hardware + " · llama.cpp · \(runs.first?.contextK ?? 16)K bağlam")
+                Text(hardware + L(" · llama.cpp · \(runs.first?.contextK ?? 16)K bağlam"))
                 Spacer()
                 Text("AurelionLabs").fontWeight(.semibold).foregroundStyle(Theme.primary)
             }
@@ -69,7 +69,7 @@ struct ResultCard: View {
                     }
                     Spacer()
                     if best {
-                        Label("en iyi", systemImage: "checkmark.seal.fill")
+                        Label(L("en iyi"), systemImage: "checkmark.seal.fill")
                             .font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.primary)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(Theme.primarySoft, in: .capsule)
@@ -79,12 +79,12 @@ struct ResultCard: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("\(run.passed)/\(run.total)").font(.system(size: 76, weight: .bold).monospacedDigit())
                             .foregroundStyle(Theme.textPrimary)
-                        Text("test geçti").font(.system(size: 20)).foregroundStyle(Theme.textSecondary)
+                        Text(L("test geçti")).font(.system(size: 20)).foregroundStyle(Theme.textSecondary)
                     }
                     VStack(alignment: .leading, spacing: 0) {
                         Text(StatsLine.num(run.speed, 1)).font(.system(size: 52, weight: .bold).monospacedDigit())
                             .foregroundStyle(Theme.primary)
-                        Text("token/sn ort.").font(.system(size: 20)).foregroundStyle(Theme.textSecondary)
+                        Text(L("token/sn ort.")).font(.system(size: 20)).foregroundStyle(Theme.textSecondary)
                     }
                 }
                 VStack(spacing: 11) {
@@ -110,7 +110,7 @@ struct ResultCard: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(run.failed.isEmpty ? "Hepsini geçti" : "Geçemedikleri")
+                    Text(run.failed.isEmpty ? L("Hepsini geçti") : L("Geçemedikleri"))
                         .font(.system(size: 17, weight: .semibold)).foregroundStyle(Theme.textSecondary)
                     if !run.failed.isEmpty {
                         HStack(spacing: 8) {
@@ -160,7 +160,7 @@ struct ResultCard: View {
             guard let v = s.byCategory[c.rawValue], v.count == 2 else { return nil }
             return (c.title, v[0], v[1])
         }
-        let failed = s.failedTests.map { $0.replacingOccurrences(of: "Samanlıkta iğne · ", with: "İğne ") }
+        let failed = s.failedTests.map { $0.replacingOccurrences(of: "Samanlıkta iğne · ", with: "İğne ").replacingOccurrences(of: "Needle in a haystack · ", with: "Needle ") }
         return Run(label: label(for: s.model), sizeGB: bytes.map { $0 / 1e9 }, passed: s.passed, total: s.total,
                    speed: s.avgTokensPerSecond, categories: cats.map { (name: $0.0, passed: $0.1, total: $0.2) },
                    failed: failed, contextK: s.contextSize / 1024)
@@ -180,7 +180,7 @@ struct ResultCard: View {
         let stamp = Date().formatted(.dateTime.year().month(.twoDigits).day(.twoDigits).hour().minute())
             .replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: ".")
         let url = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Sonuç kartı \(stamp).png")
+            .appendingPathComponent(L("Sonuç kartı \(stamp).png"))
         do { try png.write(to: url, options: .atomic) } catch { return nil }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setData(png, forType: .png)

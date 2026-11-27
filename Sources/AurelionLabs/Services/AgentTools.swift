@@ -14,49 +14,49 @@ enum AgentTools {
     /// OpenAI biçiminde araç tanımları. Çalışma klasörü yoksa dosya/komut araçları verilmez.
     static func definitions(hasFolder: Bool, hasBrain: Bool = false) -> Data {
         var tools: [[String: Any]] = [
-            fn("hesapla", "Matematik ifadesini kesin hesaplar. + - * / % ^ ve parantez destekler.",
-               ["ifade": "Hesaplanacak ifade, ör. (48271*9133+17)/3"], required: ["ifade"]),
-            fn("simdiki_zaman", "Bu Mac'teki güncel tarih, gün ve saati verir.", [:], required: []),
+            fn("hesapla", L("Matematik ifadesini kesin hesaplar. + - * / % ^ ve parantez destekler."),
+               ["ifade": L("Hesaplanacak ifade, ör. (48271*9133+17)/3")], required: ["ifade"]),
+            fn("simdiki_zaman", L("Bu Mac'teki güncel tarih, gün ve saati verir."), [:], required: []),
         ]
         if hasBrain {
             tools += [
-                fn("beyin_baglam", "Kullanıcının Beyin'inden özet: kim olduğu, son günlerin işleri, açık görevler. Sohbetin başında bir kez çağır.",
+                fn("beyin_baglam", L("Kullanıcının Beyin'inden özet: kim olduğu, son günlerin işleri, açık görevler. Sohbetin başında bir kez çağır."),
                    [:], required: []),
-                fn("beyin_ara", "Kullanıcının Beyin'inde (notlar, kararlar, projeler, video stili) anlamca arar. Bir şeyi hatırlaman gerekince önce bunu kullan.",
-                   ["sorgu": "Aranacak konu", "klasor": "İsteğe bağlı: Kararlar, Projeler, Notlar, Video, Gorevler…"], required: ["sorgu"]),
-                fn("beyin_oku", "Beyin'deki bir notun tamamını okur.", ["yol": "Notun yolu, ör. Kararlar/x.md"], required: ["yol"]),
-                fn("beyin_kaydet", "Kalıcı bilgiyi Beyin'e yazar: biten iş, karar, ölçüm sonucu, ders. Sohbetin tamamını değil özünü yaz.",
-                   ["baslik": "Kısa başlık", "icerik": "Öz bilgi; rakamlar ölçümden",
-                    "tur": "not | karar | gorev | kaynak | ders | kisi | proje", "etiketler": "Virgülle ayrılmış, ör. inkling,x-paylasim"],
+                fn("beyin_ara", L("Kullanıcının Beyin'inde (notlar, kararlar, projeler, video stili) anlamca arar. Bir şeyi hatırlaman gerekince önce bunu kullan."),
+                   ["sorgu": L("Aranacak konu"), "klasor": L("İsteğe bağlı: Kararlar, Projeler, Notlar, Video, Gorevler…")], required: ["sorgu"]),
+                fn("beyin_oku", L("Beyin'deki bir notun tamamını okur."), ["yol": L("Notun yolu, ör. Kararlar/x.md")], required: ["yol"]),
+                fn("beyin_kaydet", L("Kalıcı bilgiyi Beyin'e yazar: biten iş, karar, ölçüm sonucu, ders. Sohbetin tamamını değil özünü yaz."),
+                   ["baslik": L("Kısa başlık"), "icerik": L("Öz bilgi; rakamlar ölçümden"),
+                    "tur": "not | karar | gorev | kaynak | ders | kisi | proje", "etiketler": L("Virgülle ayrılmış, ör. inkling,x-paylasim")],
                    required: ["baslik", "icerik"]),
-                fn("x_tarzi", "Kullanıcının X paylaşım tarzı kuralları. X taslağı yazmadan önce oku.", [:], required: []),
-                fn("x_taslak_koy", "X flood taslağını kullanıcının onay kuyruğuna koyar; GÖNDERMEZ, gönderimi kullanıcı yapar. "
-                   + "Rakamları yalnız Beyin notlarından al.",
-                   ["baslik": "Taslağın konusu",
-                    "tweetler": "Tweetler sırayla; aralarına tek başına bir satırda ---tweet--- koy. Her biri en fazla 280 karakter.",
-                    "kaynaklar": "Rakamların geldiği Beyin not yolları, virgülle ayrılmış"],
+                fn("x_tarzi", L("Kullanıcının X paylaşım tarzı kuralları. X taslağı yazmadan önce oku."), [:], required: []),
+                fn("x_taslak_koy", L("X flood taslağını kullanıcının onay kuyruğuna koyar; GÖNDERMEZ, gönderimi kullanıcı yapar. ")
+                   + L("Rakamları yalnız Beyin notlarından al."),
+                   ["baslik": L("Taslağın konusu"),
+                    "tweetler": L("Tweetler sırayla; aralarına tek başına bir satırda ---tweet--- koy. Her biri en fazla 280 karakter."),
+                    "kaynaklar": L("Rakamların geldiği Beyin not yolları, virgülle ayrılmış")],
                    required: ["baslik", "tweetler"]),
             ]
         }
         let skills = SkillLibrary.all()
         if !skills.isEmpty {
             tools.append(fn("beceri_oku",
-                "Bir beceriyi (adım adım talimat paketi) açar. İş aşağıdaki becerilerden birine uyuyorsa önce bunu çağır, "
-                + "sonra talimatlara uy. Becerinin ek dosyaları için `dosya` ver (ör. references/x.md). Beceriler:\n"
+                L("Bir beceriyi (adım adım talimat paketi) açar. İş aşağıdaki becerilerden birine uyuyorsa önce bunu çağır, ")
+                + L("sonra talimatlara uy. Becerinin ek dosyaları için `dosya` ver (ör. references/x.md). Beceriler:\n")
                 + SkillLibrary.catalog(skills),
-                ["ad": "Becerinin adı, ör. hyperframes", "dosya": "İsteğe bağlı: beceri klasörüne göre göreli dosya; boşsa SKILL.md"],
+                ["ad": L("Becerinin adı, ör. hyperframes"), "dosya": L("İsteğe bağlı: beceri klasörüne göre göreli dosya; boşsa SKILL.md")],
                 required: ["ad"]))
         }
         if hasFolder {
             tools += [
-                fn("dosya_listele", "Çalışma klasöründeki dosya ve klasörleri listeler.",
-                   ["klasor": "Çalışma klasörüne göre göreli yol; kök için \".\""], required: []),
-                fn("dosya_oku", "Çalışma klasöründeki bir metin, kod ya da PDF dosyasını okur.",
-                   ["yol": "Çalışma klasörüne göre göreli dosya yolu"], required: ["yol"]),
-                fn("dosya_yaz", "Çalışma klasörüne bir metin dosyası yazar (varsa üzerine yazar). Kullanıcı onaylamalı.",
-                   ["yol": "Göreli dosya yolu", "icerik": "Dosyanın tam içeriği"], required: ["yol", "icerik"]),
-                fn("komut_calistir", "Çalışma klasöründe bir kabuk (zsh) komutu çalıştırır, çıktısını döndürür. Kullanıcı onaylamalı.",
-                   ["komut": "Çalıştırılacak komut, ör. ls -la"], required: ["komut"]),
+                fn("dosya_listele", L("Çalışma klasöründeki dosya ve klasörleri listeler."),
+                   ["klasor": L("Çalışma klasörüne göre göreli yol; kök için \".\"")], required: []),
+                fn("dosya_oku", L("Çalışma klasöründeki bir metin, kod ya da PDF dosyasını okur."),
+                   ["yol": L("Çalışma klasörüne göre göreli dosya yolu")], required: ["yol"]),
+                fn("dosya_yaz", L("Çalışma klasörüne bir metin dosyası yazar (varsa üzerine yazar). Kullanıcı onaylamalı."),
+                   ["yol": L("Göreli dosya yolu"), "icerik": L("Dosyanın tam içeriği")], required: ["yol", "icerik"]),
+                fn("komut_calistir", L("Çalışma klasöründe bir kabuk (zsh) komutu çalıştırır, çıktısını döndürür. Kullanıcı onaylamalı."),
+                   ["komut": L("Çalıştırılacak komut, ör. ls -la")], required: ["komut"]),
             ]
         }
         return (try? JSONSerialization.data(withJSONObject: tools)) ?? Data("[]".utf8)
@@ -80,7 +80,7 @@ enum AgentTools {
     static func summary(_ call: ToolCallRecord) -> String {
         let a = args(call.arguments)
         switch call.name {
-        case "dosya_yaz": return "\(a["yol"] ?? "?") dosyasına \((a["icerik"] ?? "").count) karakter yazılacak."
+        case "dosya_yaz": return L("\(a["yol"] ?? "?") dosyasına \((a["icerik"] ?? "").count) karakter yazılacak.")
         case "komut_calistir": return a["komut"] ?? ""
         default: return call.arguments
         }
@@ -92,9 +92,9 @@ enum AgentTools {
         let a = args(call.arguments)
         switch call.name {
         case "hesapla":
-            guard let expr = a["ifade"] else { return Outcome(text: "Hata: ifade verilmedi.", ok: false) }
+            guard let expr = a["ifade"] else { return Outcome(text: L("Hata: ifade verilmedi."), ok: false) }
             do { return Outcome(text: format(try Calculator.evaluate(expr)), ok: true) }
-            catch { return Outcome(text: "Hata: \(error.localizedDescription)", ok: false) }
+            catch { return Outcome(text: L("Hata: \(error.localizedDescription)"), ok: false) }
 
         case "simdiki_zaman":
             let f = DateFormatter()
@@ -112,38 +112,38 @@ enum AgentTools {
             guard let url = resolve(a["klasor"] ?? ".", in: folder) else { return outside }
             let items = (try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey],
                                                                        options: [.skipsHiddenFiles])) ?? []
-            if items.isEmpty { return Outcome(text: "Klasör boş ya da okunamadı.", ok: true) }
+            if items.isEmpty { return Outcome(text: L("Klasör boş ya da okunamadı."), ok: true) }
             let lines = items.sorted { $0.lastPathComponent < $1.lastPathComponent }.prefix(200).map { u -> String in
                 let v = try? u.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
-                return v?.isDirectory == true ? "\(u.lastPathComponent)/" : "\(u.lastPathComponent) (\(v?.fileSize ?? 0) bayt)"
+                return v?.isDirectory == true ? "\(u.lastPathComponent)/" : L("\(u.lastPathComponent) (\(v?.fileSize ?? 0) bayt)")
             }
-            return Outcome(text: lines.joined(separator: "\n") + (items.count > 200 ? "\n… ve \(items.count - 200) öğe daha" : ""), ok: true)
+            return Outcome(text: lines.joined(separator: "\n") + (items.count > 200 ? L("\n… ve \(items.count - 200) öğe daha") : ""), ok: true)
 
         case "dosya_oku":
             guard let url = resolve(a["yol"] ?? "", in: folder) else { return outside }
             guard let text = DocumentLoader.loadText(url, maxChars: maxChars + 1) else {
-                return Outcome(text: "Dosya okunamadı (yok, boş ya da metin değil).", ok: false)
+                return Outcome(text: L("Dosya okunamadı (yok, boş ya da metin değil)."), ok: false)
             }
-            return Outcome(text: text.count > maxChars ? String(text.prefix(maxChars)) + "\n[… dosyanın devamı kesildi]" : text, ok: true)
+            return Outcome(text: text.count > maxChars ? String(text.prefix(maxChars)) + L("\n[… dosyanın devamı kesildi]") : text, ok: true)
 
         case "dosya_yaz":
             guard let url = resolve(a["yol"] ?? "", in: folder) else { return outside }
             do {
                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try (a["icerik"] ?? "").write(to: url, atomically: true, encoding: .utf8)
-                return Outcome(text: "Yazıldı: \(a["yol"] ?? "")", ok: true)
-            } catch { return Outcome(text: "Yazılamadı: \(error.localizedDescription)", ok: false) }
+                return Outcome(text: L("Yazıldı: \(a["yol"] ?? "")"), ok: true)
+            } catch { return Outcome(text: L("Yazılamadı: \(error.localizedDescription)"), ok: false) }
 
         case "komut_calistir":
             guard let folder else { return outside }
             return await shell(a["komut"] ?? "", in: folder, maxChars: maxChars)
 
         default:
-            return Outcome(text: "Böyle bir araç yok: \(call.name)", ok: false)
+            return Outcome(text: L("Böyle bir araç yok: \(call.name)"), ok: false)
         }
     }
 
-    private static let outside = Outcome(text: "Hata: yol çalışma klasörünün dışında ya da çalışma klasörü seçilmedi.", ok: false)
+    private static let outside = Outcome(text: L("Hata: yol çalışma klasörünün dışında ya da çalışma klasörü seçilmedi."), ok: false)
 
     /// Göreli yolu çalışma klasörüne bağlar; klasör dışına (.. ya da sembolik bağla) çıkışı reddeder.
     static func resolve(_ path: String, in folder: URL?) -> URL? {
@@ -166,16 +166,16 @@ enum AgentTools {
             p.standardOutput = pipe
             p.standardError = pipe
             do { try p.run() } catch {
-                cont.resume(returning: Outcome(text: "Çalıştırılamadı: \(error.localizedDescription)", ok: false)); return
+                cont.resume(returning: Outcome(text: L("Çalıştırılamadı: \(error.localizedDescription)"), ok: false)); return
             }
             DispatchQueue.global().asyncAfter(deadline: .now() + 30) { if p.isRunning { p.terminate() } }
             DispatchQueue.global().async {
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 p.waitUntilExit()
                 var out = String(decoding: data, as: UTF8.self)
-                if out.count > maxChars { out = String(out.prefix(maxChars)) + "\n[… çıktı kesildi]" }
+                if out.count > maxChars { out = String(out.prefix(maxChars)) + L("\n[… çıktı kesildi]") }
                 let code = p.terminationStatus
-                cont.resume(returning: Outcome(text: "çıkış kodu \(code)\n" + (out.isEmpty ? "(çıktı yok)" : out), ok: code == 0))
+                cont.resume(returning: Outcome(text: L("çıkış kodu \(code)\n") + (out.isEmpty ? L("(çıktı yok)") : out), ok: code == 0))
             }
         }
     }
@@ -195,7 +195,7 @@ enum Calculator {
             .replacingOccurrences(of: "÷", with: "/")))
         let v = try p.expr()
         p.skip()
-        guard p.i == p.chars.count else { throw Failure(errorDescription: "ifade anlaşılamadı") }
+        guard p.i == p.chars.count else { throw Failure(errorDescription: L("ifade anlaşılamadı")) }
         return v
     }
 
@@ -214,7 +214,7 @@ enum Calculator {
             while let c = peek(), c == "*" || c == "/" || c == "%" {
                 i += 1
                 let r = try power()
-                if c != "*" && r == 0 { throw Failure(errorDescription: "sıfıra bölme") }
+                if c != "*" && r == 0 { throw Failure(errorDescription: L("sıfıra bölme")) }
                 v = c == "*" ? v * r : c == "/" ? v / r : v.truncatingRemainder(dividingBy: r)
             }
             return v
@@ -233,14 +233,14 @@ enum Calculator {
             if peek() == "(" {
                 i += 1
                 let v = try expr()
-                guard peek() == ")" else { throw Failure(errorDescription: "kapanmayan parantez") }
+                guard peek() == ")" else { throw Failure(errorDescription: L("kapanmayan parantez")) }
                 i += 1
                 return v
             }
             skip()
             let start = i
             while i < chars.count, chars[i].isNumber || chars[i] == "." { i += 1 }
-            guard start < i, let v = Double(String(chars[start..<i])) else { throw Failure(errorDescription: "sayı bekleniyordu") }
+            guard start < i, let v = Double(String(chars[start..<i])) else { throw Failure(errorDescription: L("sayı bekleniyordu")) }
             return v
         }
     }

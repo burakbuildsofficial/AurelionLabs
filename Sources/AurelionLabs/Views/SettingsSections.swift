@@ -8,13 +8,13 @@ struct ModelsSection: View {
     var body: some View {
         let lib = store.library
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Modeller", trailing: AnyView(
-                Button("Yenile") { lib.scan() }
+            SectionHeader(title: L("Modeller"), trailing: AnyView(
+                Button(L("Yenile")) { lib.scan() }
                     .buttonStyle(.plain).font(Theme.Font.caption).foregroundStyle(Theme.textTertiary)
             ))
             VStack(alignment: .leading, spacing: 0) {
                 if lib.models.isEmpty {
-                    Text("Taranan klasörlerde .gguf model yok. Aşağıdan modellerinin olduğu klasörü ekle.")
+                    Text(L("Taranan klasörlerde .gguf model yok. Aşağıdan modellerinin olduğu klasörü ekle."))
                         .font(Theme.Font.callout).foregroundStyle(Theme.textSecondary)
                         .padding(.vertical, 6)
                 }
@@ -26,7 +26,7 @@ struct ModelsSection: View {
             .card()
 
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                Text("Taranan klasörler").font(Theme.Font.callout.weight(.semibold))
+                Text(L("Taranan klasörler")).font(Theme.Font.callout.weight(.semibold))
                 ForEach(lib.folders, id: \.self) { f in
                     HStack {
                         Image(systemName: "folder").foregroundStyle(Theme.textTertiary)
@@ -35,11 +35,11 @@ struct ModelsSection: View {
                         Spacer()
                         Button { lib.removeFolder(f) } label: { Image(systemName: "minus.circle") }
                             .buttonStyle(.plain).foregroundStyle(Theme.textTertiary)
-                            .accessibilityLabel("Klasörü listeden çıkar")
+                            .accessibilityLabel(L("Klasörü listeden çıkar"))
                     }
                 }
-                SecondaryButton(title: "Klasör ekle", symbol: "plus") { addFolder() }
-                Text("Alt klasörler de taranır. Aynı klasörde mmproj dosyası olan model resim de okuyabilir.")
+                SecondaryButton(title: L("Klasör ekle"), symbol: "plus") { addFolder() }
+                Text(L("Alt klasörler de taranır. Aynı klasörde mmproj dosyası olan model resim de okuyabilir."))
                     .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
             }
             .card()
@@ -56,15 +56,15 @@ struct ModelsSection: View {
                 .font(.system(size: 18))
                 .foregroundStyle(current ? Theme.primary : Theme.textTertiary)
                 .frame(width: 28)
-                .help(m.mmproj != nil ? "Resim okuyabilir" : "Yalnız metin")
+                .help(m.mmproj != nil ? L("Resim okuyabilir") : L("Yalnız metin"))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(m.family).font(Theme.Font.callout.weight(.semibold)).foregroundStyle(Theme.textPrimary)
                     if m.fileName.contains("-AD-") {
-                        Label("Atomic Engine", systemImage: "bolt.fill")
+                        Label(L("Atomic Engine"), systemImage: "bolt.fill")
                             .font(Theme.Font.small.weight(.semibold))
                             .foregroundStyle(Theme.Tone.mild.color)
-                            .help("Bu model Atomic Engine ile açılır: bellek bütçesi + DSpark taslak model, 4K bağlam")
+                            .help(L("Bu model Atomic Engine ile açılır: bellek bütçesi + DSpark taslak model, 4K bağlam"))
                     }
                     if !m.quant.isEmpty {
                         Text(m.bits.map { "\($0) · \(m.quant)" } ?? m.quant)
@@ -80,7 +80,7 @@ struct ModelsSection: View {
                     Text(m.folder)
                     if heavy {
                         Text("·")
-                        Label("bu Mac için ağır", systemImage: Theme.Tone.caution.symbol)
+                        Label(L("bu Mac için ağır"), systemImage: Theme.Tone.caution.symbol)
                             .foregroundStyle(Theme.Tone.caution.color)
                     }
                 }
@@ -89,14 +89,14 @@ struct ModelsSection: View {
             Spacer()
             if current && server.isBusy {
                 ProgressView().controlSize(.small)
-                Text("Yükleniyor").font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
+                Text(L("Yükleniyor")).font(Theme.Font.caption).foregroundStyle(Theme.textSecondary)
             } else if current && server.isUsable {
-                Label("Yüklü", systemImage: Theme.Tone.good.symbol)
+                Label(L("Yüklü"), systemImage: Theme.Tone.good.symbol)
                     .font(Theme.Font.caption.weight(.semibold))
                     .foregroundStyle(Theme.Tone.good.color)
-                SecondaryButton(title: "Kaldır", symbol: "power") { server.unload() }
+                SecondaryButton(title: L("Kaldır"), symbol: "power") { server.unload() }
             } else {
-                SecondaryButton(title: "Yükle", symbol: "arrow.down.circle", tint: Theme.primary) { store.load(m) }
+                SecondaryButton(title: L("Yükle"), symbol: "arrow.down.circle", tint: Theme.primary) { store.load(m) }
                     .disabled(store.isGenerating || store.tests.isRunning || server.isBusy)
             }
         }
@@ -107,8 +107,8 @@ struct ModelsSection: View {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
-        panel.prompt = "Ekle"
-        panel.message = "GGUF modellerinin bulunduğu klasörü seç"
+        panel.prompt = L("Ekle")
+        panel.message = L("GGUF modellerinin bulunduğu klasörü seç")
         if panel.runModal() == .OK, let url = panel.url { store.library.addFolder(url.path) }
     }
 }
@@ -120,10 +120,21 @@ struct AppearanceSection: View {
     var body: some View {
         @Bindable var store = store
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Görünüm")
+            SectionHeader(title: L("Görünüm"))
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Tema").font(Theme.Font.callout.weight(.semibold))
+                    Text(L("Dil")).font(Theme.Font.callout.weight(.semibold))
+                    HStack(spacing: Theme.Space.s) {
+                        ForEach(Lang.allCases) { l in
+                            Chip(title: l.title, selected: store.language == l) { store.language = l }
+                        }
+                    }
+                    Text(L("Arayüzün dili. Test istemleri Türkçe kalır, çünkü ölçümün kendisi onlar."))
+                        .font(Theme.Font.small).foregroundStyle(Theme.textTertiary)
+                }
+                Divider().overlay(Theme.hairline)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L("Tema")).font(Theme.Font.callout.weight(.semibold))
                     HStack(spacing: Theme.Space.s) {
                         ForEach(Appearance.allCases) { a in
                             Button { store.appearance = a } label: {
@@ -140,7 +151,7 @@ struct AppearanceSection: View {
                 }
                 Divider().overlay(Theme.hairline)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Ana renk").font(Theme.Font.callout.weight(.semibold))
+                    Text(L("Ana renk")).font(Theme.Font.callout.weight(.semibold))
                     HStack(spacing: 14) {
                         ForEach(Palette.allCases, id: \.self) { p in
                             Button { store.palette = p } label: {
@@ -160,7 +171,7 @@ struct AppearanceSection: View {
                                 }
                             }
                             .buttonStyle(PressableStyle())
-                            .accessibilityLabel("Ana renk: \(p.title)")
+                            .accessibilityLabel(L("Ana renk: \(p.title)"))
                         }
                     }
                 }

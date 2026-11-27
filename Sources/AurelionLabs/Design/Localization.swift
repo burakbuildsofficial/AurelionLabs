@@ -1,0 +1,560 @@
+import Foundation
+
+/// Uygulamanın dili. Metinler kaynakta Türkçe yazılır; İngilizce karşılıkları aşağıdaki sözlükte.
+/// Dil Ayarlar › Görünüm'den değişir ve hemen geçerli olur (yeniden başlatma gerekmez).
+enum Lang: String, CaseIterable, Identifiable, Sendable {
+    case tr, en
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .tr: "Türkçe"
+        case .en: "English"
+        }
+    }
+
+    static let storageKey = "language"
+
+    /// Kayıtlı seçim; yoksa sistem dili Türkçeyse Türkçe, değilse İngilizce.
+    nonisolated(unsafe) static var current: Lang = {
+        if let s = UserDefaults.standard.string(forKey: storageKey), let l = Lang(rawValue: s) { return l }
+        return Locale.preferredLanguages.first?.lowercased().hasPrefix("tr") == true ? .tr : .en
+    }()
+}
+
+/// `L("\(n) mesaj")` gibi yazılan metnin anahtarı (`%@ mesaj`) ve araya giren değerler.
+struct LKey: ExpressibleByStringInterpolation {
+    var key = ""
+    var plain = ""
+    var args: [String] = []
+
+    init(stringLiteral value: String) { key = value; plain = value }
+    init(stringInterpolation i: Interpolation) { key = i.key; plain = i.plain; args = i.args }
+
+    struct Interpolation: StringInterpolationProtocol {
+        var key = "", plain = ""
+        var args: [String] = []
+        init(literalCapacity: Int, interpolationCount: Int) {}
+        mutating func appendLiteral(_ s: String) { key += s; plain += s }
+        mutating func appendInterpolation<T>(_ v: T) {
+            let s = String(describing: v)
+            key += "%@"; plain += s; args.append(s)
+        }
+    }
+}
+
+/// Seçili dildeki metin. Türkçede ya da karşılığı yoksa yazıldığı gibi döner.
+func L(_ k: LKey) -> String {
+    guard Lang.current == .en, let t = english[k.key] else { return k.plain }
+    return fill(t, k.args)
+}
+
+/// Çalışma anında gelen metin (ör. hazır ön ayar adı) için sözlükte birebir arama.
+func L(raw s: String) -> String {
+    guard Lang.current == .en else { return s }
+    return english[s] ?? s
+}
+
+/// `%@` yer tutucularını sırayla, `%2$@` gibi olanları numarasına göre doldurur.
+private func fill(_ template: String, _ args: [String]) -> String {
+    guard !args.isEmpty else { return template }
+    var out = "", next = 0
+    var i = template.startIndex
+    while i < template.endIndex {
+        if template[i] == "%" {
+            var j = template.index(after: i)
+            var digits = ""
+            while j < template.endIndex, template[j].isNumber { digits.append(template[j]); j = template.index(after: j) }
+            if !digits.isEmpty, j < template.endIndex, template[j] == "$" {
+                let k = template.index(after: j)
+                if k < template.endIndex, template[k] == "@", let n = Int(digits), n >= 1, n <= args.count {
+                    out += args[n - 1]; i = template.index(after: k); continue
+                }
+            } else if digits.isEmpty, j < template.endIndex, template[j] == "@" {
+                out += next < args.count ? args[next] : ""
+                next += 1; i = template.index(after: j); continue
+            }
+        }
+        out.append(template[i]); i = template.index(after: i)
+    }
+    return out
+}
+
+// MARK: İngilizce
+
+let english: [String: String] = [
+    // Genel
+    "Yeni sohbet": "New chat",
+    "Belgeler": "Documents",
+    "Karşılaştır": "Compare",
+    "Testler": "Tests",
+    "Ayarlar": "Settings",
+    "Ayarlar…": "Settings…",
+    "Cevabı durdur": "Stop answer",
+    "Son cevabı yeniden üret": "Regenerate last answer",
+    "Düşünmeyi göster/gizle": "Show/hide thinking",
+    "Dil": "Language",
+    "Arayüzün dili. Test istemleri Türkçe kalır, çünkü ölçümün kendisi onlar.": "Language of the interface. Test prompts stay in Turkish, because they are the benchmark itself.",
+
+    // Görünüm
+    "Mavi": "Blue",
+    "Çivit": "Indigo",
+    "Mercan": "Coral",
+    "Orman": "Forest",
+    "Deniz": "Teal",
+    "Sistem": "System",
+    "Açık": "Light",
+    "Koyu": "Dark",
+    "Görünüm": "Appearance",
+    "Tema": "Theme",
+    "Ana renk": "Accent color",
+    "Ana renk: %@": "Accent color: %@",
+
+    // Ön ayarlar
+    "Önerilen": "Recommended",
+    "Türkçe asistan": "Turkish assistant",
+    "Kod yardımcısı": "Coding assistant",
+    "Yaratıcı": "Creative",
+    "Her zaman akıcı ve doğal bir Türkçeyle, kısa ve net cevap ver.": "Always answer in fluent, natural Turkish, briefly and clearly.",
+    "Deneyimli bir yazılımcısın. Çalışan, açıklamalı kod ver; gereksiz laf etme.": "You are an experienced developer. Give working, commented code; skip the small talk.",
+    "Özel ayar": "Custom",
+    "özel ayar": "custom",
+
+    // Sohbet ve dışa aktarma
+    "Bu dosyayı özetle.": "Summarize this file.",
+    "_Model: %@_\n\n": "_Model: %@_\n\n",
+    "araç": "tool",
+    "> 🔧 %@ sonucu\n\n": "> 🔧 %@ result\n\n",
+    "## Sen\n\n": "## You\n\n",
+    "## Model\n\n": "## Model\n\n",
+    "> 🖼 %@ resim\n\n": "> 🖼 %@ image(s)\n\n",
+    "Resim sorusu": "Image question",
+    "Kendini iki cümleyle tanıt.": "Introduce yourself in two sentences.",
+    "Bu resimde ne görüyorsun?": "What do you see in this image?",
+    "Bir SwiftUI sayacı yaz, açıklamalı olsun.": "Write a SwiftUI counter with comments.",
+    "Kuantum dolanıklığını 10 yaşındaki birine anlat.": "Explain quantum entanglement to a 10-year-old.",
+    "Bir şey sor, resim ya da dosya sürükle": "Ask something, or drop an image or file",
+    "Model tamamen bu Mac'te çalışır, hiçbir şey dışarı gitmez. Modeli ve ön ayarı üstteki menülerden tek tıkla değiştirebilirsin.": "The model runs entirely on this Mac; nothing leaves it. Switch the model and preset in one click from the menus at the top.",
+    "Kullanım modu": "Mode",
+    "Model değiştiriliyor…": "Switching model…",
+    "İstem işleniyor…": "Processing prompt…",
+    "Yeniden üret": "Regenerate",
+    "Kopyala": "Copy",
+    "Kopyalandı": "Copied",
+    "Kodu kopyala": "Copy code",
+    "kod": "code",
+    "Düşünüyor…": "Thinking…",
+    "Düşündü": "Thought",
+    "· %@ karakter": "· %@ characters",
+    "Düşünmeyi gizle": "Hide thinking",
+    "Düşünmeyi göster": "Show thinking",
+    "Dosyalar bağlamın %%@'ini dolduruyor, cevap kesilebilir.": "Files fill %@% of the context; the answer may get cut off.",
+    "Açık model resim okuyamıyor.": "The loaded model can't read images.",
+    "Dosya ya da resim ekle": "Add a file or image",
+    "Durdur": "Stop",
+    "Gönder": "Send",
+    "Eklenemedi: ": "Couldn't add: ",
+    "Bir şey sor…": "Ask something…",
+    "Model yüklenince yazabilirsin. Üstteki model menüsünden seç.": "You can type once a model is loaded. Pick one from the model menu at the top.",
+    "Enter gönderir · Shift+Enter yeni satır · resim, PDF ya da kod dosyası sürükle": "Enter sends · Shift+Enter new line · drop an image, PDF or code file",
+    "Enter gönderir · PDF ya da kod dosyası sürükle (resim desteği kapalı)": "Enter sends · drop a PDF or code file (image support off)",
+    "~%@ token": "~%@ tokens",
+    " · kısaltıldı": " · truncated",
+    "Dosyayı kaldır": "Remove file",
+    "Dosya uzun olduğu için ilk %@ karakteri gönderilecek.": "The file is long, so only its first %@ characters will be sent.",
+    "%@ moduna geç": "Switch to %@",
+    "Araçları kullan (ajan modu)": "Use tools (agent mode)",
+    "Çalışma klasörü: %@": "Working folder: %@",
+    "Çalışma klasörü yok: hesap, saat, beceriler ve Beyin": "No working folder: calculator, clock, skills and Brain",
+    "Çalışma klasörü seç…": "Choose working folder…",
+    "Klasörü kaldır": "Remove folder",
+    "Dosya yazma ve komut çalıştırma her seferinde onayını ister": "Writing files and running commands ask for your approval every time",
+    "Ajan açık": "Agent on",
+    "Ajan": "Agent",
+    "Modele hesap makinesi, saat, dosya okuma/yazma ve terminal ver": "Give the model a calculator, clock, file read/write and a terminal",
+    "%@ sonucu · ": "%@ result · ",
+    "Model bir komut çalıştırmak istiyor": "The model wants to run a command",
+    "Model bir dosya yazmak istiyor": "The model wants to write a file",
+    "Klasör: ": "Folder: ",
+    "Reddet": "Deny",
+    "Çalıştır": "Run",
+    "Yaz": "Write",
+
+    // Üst çubuk ve kenar çubuğu
+    "Yeni sohbet (⌘N)": "New chat (⌘N)",
+    "Sohbetlerde ara": "Search chats",
+    "%@ mesaj": "%@ messages",
+    "Tamamen bu Mac'te, internet yok": "Entirely on this Mac, no internet",
+    "Klasör ya da dosyaları özetle, soru sor, kaynağını gör": "Summarize folders or files, ask questions, see the sources",
+    "Aynı soru, iki ön ayar, yan yana": "Same question, two presets, side by side",
+    "Modelin sınırlarını otomatik testlerle ölç": "Measure the model's limits with automatic tests",
+    "Modeller, ön ayarlar, sunucu ve görünüm": "Models, presets, server and appearance",
+    "Sabitlenenler": "Pinned",
+    "Sohbetlerin burada birikir. İlk mesajla kaydedilir.": "Your chats collect here. A chat is saved with its first message.",
+    "Bu aramayla eşleşen sohbet yok.": "No chats match this search.",
+    "Sohbeti yeniden adlandır": "Rename chat",
+    "Ad": "Name",
+    "Kaydet": "Save",
+    "Vazgeç": "Cancel",
+    "Sabitlemeyi kaldır": "Unpin",
+    "Sabitle": "Pin",
+    "Yeniden adlandır": "Rename",
+    "Markdown olarak kaydet…": "Save as Markdown…",
+    "Sil": "Delete",
+    "Bugün": "Today",
+    "Dün": "Yesterday",
+    "Son 7 gün": "Last 7 days",
+    "Daha eski": "Older",
+    "Bu Mac'teki modeller": "Models on this Mac",
+    "Model bulunamadı. Ayarlar › Modeller'den klasör ekle.": "No models found. Add a folder in Settings › Models.",
+    "Modeli bellekten kaldır": "Unload model",
+    "Modeli yükle": "Load model",
+    "Listeyi yenile": "Refresh list",
+    "Model ayarları…": "Model settings…",
+    "Modeli değiştir, yükle ya da bellekten kaldır": "Switch, load or unload the model",
+    "Model yükleniyor": "Loading model",
+    "Model hazır": "Model ready",
+    "Model hazır (başka bir yerden açılmış sunucu)": "Model ready (server started elsewhere)",
+    "Model kapalı": "Model off",
+    "Model açılamadı: ": "Model failed to start: ",
+    "Yükleniyor: ": "Loading: ",
+    "Model açılamadı": "Model failed to start",
+    " · Atomic": " · Atomic",
+    "Her modelde son seçtiğin ön ayar hatırlanır": "Each model remembers the preset you picked last",
+    "Ön ayarları düzenle…": "Edit presets…",
+    "Ön ayar: sıcaklık, token sınırı, sistem promptu": "Preset: temperature, token limit, system prompt",
+
+    // Kullanım modları
+    "Hızlı sohbet": "Fast chat",
+    "Genel": "General",
+    "Uzun metin": "Long text",
+    "Uygun model yok": "No suitable model",
+    "%@ · Atomic · 4K · resim yok": "%@ · Atomic · 4K · no images",
+    " · resim okur": " · reads images",
+    "%@ · 32K · resim kapalı": "%@ · 32K · images off",
+
+    // Ayarlar
+    "Ön ayar": "Preset",
+    "Yeni olarak kaydet": "Save as new",
+    "Güncelle": "Update",
+    "Şu an özel ayar kullanılıyor.": "You're using custom settings right now.",
+    "Noktalı ön ayarda değişiklik var. Hazır ön ayarlar değişmez, yenisi olarak kaydedebilirsin.": "The dotted preset has changes. Built-in presets don't change, but you can save a new one.",
+    "Örnekleme": "Sampling",
+    "Önerilene dön": "Reset to recommended",
+    "Sıcaklık": "Temperature",
+    "Düşük: tutarlı ve tekrar eden. Yüksek: yaratıcı ve dağınık. Önerilen 1,0.": "Low: consistent and repetitive. High: creative and scattered. Recommended 1.0.",
+    "Olasılık toplamı bu değere ulaşan kelimeler arasından seçer. 1,0 = kırpma yok.": "Picks from the words whose combined probability reaches this value. 1.0 = no cut.",
+    "En olası kelimeye göre bu oranın altındaki kelimeleri eler. 0 = kapalı.": "Drops words below this ratio of the most likely word. 0 = off.",
+    "kapalı": "off",
+    "Yalnız en olası k kelime arasından seçer. 0 = kapalı.": "Picks only from the k most likely words. 0 = off.",
+    "En fazla token": "Max tokens",
+    "Düşünme dahil, bir cevapta üretilecek en fazla token.": "The most tokens one answer may generate, thinking included.",
+    "Modelin cevaptan önceki akıl yürütmesi.": "The model's reasoning before it answers.",
+    "Sistem promptu": "System prompt",
+    "Modelin rolünü ve üslubunu yaz. Örnek: Her zaman Türkçe ve kısa cevap ver.": "Describe the model's role and tone. Example: Always answer briefly, in English.",
+    "Bir sonraki mesajdan itibaren geçerli.": "Applies from the next message.",
+    "Ön ayarı kaydet": "Save preset",
+    "Şu anki sıcaklık, top-p, min-p, top-k, token sınırı ve sistem promptu kaydedilir.": "Saves the current temperature, top-p, min-p, top-k, token limit and system prompt.",
+    "Ad, örneğin: Kısa Türkçe": "Name, for example: Short answers",
+    "Sunucu (%@)": "Server (%@)",
+    "Atomic Engine bellek bütçesi": "Atomic Engine memory budget",
+    "Model bu kadar belleği kullanır, sığmayan uzmanları SSD'den okur. Büyük bütçe daha hızlı ama Mac'te diğer işlere daha az yer kalır. Bu modda bağlam 4K'dır ve resim desteği yoktur.": "The model uses this much memory and reads the experts that don't fit from the SSD. A bigger budget is faster but leaves less room for other work on the Mac. In this mode the context is 4K and there is no image support.",
+    "Bağlam boyutu": "Context size",
+    "Daha uzun bağlam daha çok bellek ister. Model dosyası + bağlam, Mac'in belleğinin yaklaşık dörtte üçünü geçmesin.": "A longer context needs more memory. Keep model file + context under about three quarters of the Mac's memory.",
+    "Resim desteği": "Image support",
+    "Modelin resim dosyasını (mmproj) da yükler, biraz ek bellek kullanır.": "Also loads the model's image file (mmproj); uses a little extra memory.",
+    "Bu modelin klasöründe resim dosyası (mmproj) yok.": "This model's folder has no image file (mmproj).",
+    "Bu değişiklik model yeniden yüklenince geçerli olur.": "This change applies when the model reloads.",
+    "Şimdi uygula": "Apply now",
+    "Yeniden yükle": "Reload",
+    "Bellekten kaldır": "Unload",
+    "Devral ve yeniden yükle": "Take over and reload",
+    "Kapat": "Shut down",
+    "Yükle": "Load",
+    "Sunucu kaydı": "Server log",
+    "Model (.gguf)": "Model (.gguf)",
+    "Resim (mmproj)": "Images (mmproj)",
+    "Dosya yolları": "File paths",
+    "Kapalı": "Off",
+    "Başlatınca model yaklaşık 10 saniyede yüklenir.": "Once started, the model loads in about 10 seconds.",
+    "Büyüklüğüne göre 5–30 saniye sürer.": "Takes 5–30 seconds depending on size.",
+    "Model değiştiriliyor": "Switching model",
+    "Eski model bellekten çıkarılıyor.": "Unloading the previous model.",
+    "Hazır": "Ready",
+    "127.0.0.1:%@ · yalnız bu Mac'ten erişilir": "127.0.0.1:%@ · reachable only from this Mac",
+    "Hazır (harici)": "Ready (external)",
+    "Bu sunucuyu başka bir yer açmış. Model menüsünden seçim yapınca yönetim bu uygulamaya geçer.": "Something else started this server. Pick a model from the menu and this app takes over.",
+    "Çalışmıyor": "Not running",
+    "Dosya bulundu": "File found",
+    "Dosya yok": "File missing",
+    "Modeller": "Models",
+    "Yenile": "Refresh",
+    "Taranan klasörlerde .gguf model yok. Aşağıdan modellerinin olduğu klasörü ekle.": "No .gguf models in the scanned folders. Add the folder with your models below.",
+    "Taranan klasörler": "Scanned folders",
+    "Klasörü listeden çıkar": "Remove folder from list",
+    "Klasör ekle": "Add folder",
+    "Alt klasörler de taranır. Aynı klasörde mmproj dosyası olan model resim de okuyabilir.": "Subfolders are scanned too. A model with an mmproj file in its folder can also read images.",
+    "Resim okuyabilir": "Can read images",
+    "Yalnız metin": "Text only",
+    "Atomic Engine": "Atomic Engine",
+    "Bu model Atomic Engine ile açılır: bellek bütçesi + DSpark taslak model, 4K bağlam": "This model runs on Atomic Engine: memory budget + DSpark draft model, 4K context",
+    "bu Mac için ağır": "heavy for this Mac",
+    "Yükleniyor": "Loading",
+    "Yüklü": "Loaded",
+    "Kaldır": "Unload",
+    "Ekle": "Add",
+    "GGUF modellerinin bulunduğu klasörü seç": "Choose the folder that holds your GGUF models",
+
+    // Testler
+    "Mantık ve matematik": "Logic and math",
+    "Talimata uyma": "Following instructions",
+    "Türkçe": "Turkish",
+    "Kod": "Code",
+    "Görsel": "Vision",
+    "Araç kullanma": "Tool use",
+    "Ajan (çok adımlı)": "Agent (multi-step)",
+    "Uzun bağlam": "Long context",
+    "Bacak sayısı": "Counting legs",
+    "Denklem": "Equation",
+    "Saat hesabı": "Clock math",
+    "Harf sayma": "Counting letters",
+    "Takvim": "Calendar",
+    "Tuzaklı soru": "Trick question",
+    "Tam 3 madde": "Exactly 3 bullets",
+    "Sadece JSON": "JSON only",
+    "Büyük harf": "Uppercase",
+    "Kelime sınırı": "Word limit",
+    "Deyim": "Idiom",
+    "Çeviri": "Translation",
+    "Ünlü uyumu": "Vowel harmony",
+    "Asal sayı": "Prime numbers",
+    "Parantez dengesi": "Balanced brackets",
+    "Roma rakamı": "Roman numerals",
+    "Yazı okuma": "Reading text",
+    "Sayma": "Counting",
+    "Grafik okuma": "Reading a chart",
+    "Tablo okuma": "Reading a table",
+    "Doğru aracı seçme": "Picking the right tool",
+    "Hesap aracı": "Calculator tool",
+    "Argüman çıkarma": "Extracting arguments",
+    "Gereksiz araç kullanmama": "Not using tools needlessly",
+    "Dosyadan bilgi bulma": "Finding facts in a file",
+    "Klasörde dosya arama": "Searching a folder",
+    "Oku, hesapla, yaz": "Read, compute, write",
+    "Dosya düzenleme": "Editing a file",
+    "Adı verilen beceriyi kullanma": "Using a named skill",
+    "Uygun beceriyi kendi seçme": "Choosing the right skill",
+    "Beyin'den hatırlama": "Recalling from Brain",
+    "Beyin'e kaydetme": "Saving to Brain",
+    "Samanlıkta iğne · ~%@K token": "Needle in a haystack · ~%@K tokens",
+    "Henüz çalıştırılmadı": "Not run yet",
+    "Cevapta %@ var.": "The answer contains %@.",
+    "Beklenen %@, cevapta yok.": "Expected %@, not in the answer.",
+    "Beklenen ifadeler var: %@.": "Expected phrases found: %@.",
+    "Eksik: %@.": "Missing: %@.",
+    "Cevapta “%@” var.": "The answer contains “%@”.",
+    "Şunlardan hiçbiri yok: %@.": "None of these found: %@.",
+    "Kod testleri geçemedi: %@": "Code tests failed: %@",
+    "Yanlış araç çağırdı: %@.": "Called the wrong tool: %@.",
+    "%@(%@) çağırdı.": "Called %@(%@).",
+    "%@ çağırdı ama argüman eksik: %@": "Called %@ but an argument is missing: %@",
+    "test geçti": "tests passed",
+    "Tümünü çalıştır": "Run all",
+    "Bu kategoriyi çalıştır": "Run this category",
+    "Ayarlar: %@ · %@": "Settings: %@ · %@",
+    "Tümü": "All",
+    "Kod testlerinde modelin yazdığı Python kodu geçici bir klasörde 10 saniye sınırla çalıştırılır. Uzun bağlam testleri sunucunun bağlam boyutuna göre ölçeklenir.": "In code tests, the Python the model writes runs in a temporary folder with a 10-second limit. Long-context tests scale with the server's context size.",
+    "Önceki çalıştırmalar": "Previous runs",
+    "2 sonucu karta koy": "Put 2 results on a card",
+    "Sonuç kartı": "Result card",
+    "Seçili 1–2 çalıştırmayı (seçim yoksa en sonuncuyu) paylaşılabilir PNG yapar ve panoya kopyalar.": "Turns the 1–2 selected runs (or the latest, if none is selected) into a shareable PNG and copies it to the clipboard.",
+    "Karta koymak istediğin en fazla iki çalıştırmayı soldaki daireden seç.": "Use the circle on the left to pick up to two runs for the card.",
+    "Karttan çıkar": "Remove from card",
+    "Karta ekle": "Add to card",
+    "%@ · %@ · %@K bağlam": "%@ · %@ · %@K context",
+    "Hepsi geçti": "All passed",
+    "Geçemeyenler: ": "Failed: ",
+    " sn · ": " s · ",
+    "Çalıştırılmadı": "Not run",
+    "Çalışıyor": "Running",
+    "Geçti": "Passed",
+    "Geçemedi": "Failed",
+    "Hata": "Error",
+    "İstem": "Prompt",
+    "[%@ karakterlik dolgu metni] … ": "[%@ characters of filler text] … ",
+    "Araç çağrısı": "Tool call",
+    "Cevap": "Answer",
+    "Bu testi çalıştır": "Run this test",
+    "Kart panoya kopyalandı ve İndirilenler'e kaydedildi: %@": "Card copied to the clipboard and saved to Downloads: %@",
+    "Kart çizilemedi. Tekrar dene.": "Couldn't draw the card. Try again.",
+    "Test resmi oluşturulamadı.": "Couldn't create the test image.",
+    "Resim desteği kapalı. Sunucu bölümünden açıp yeniden başlat.": "Image support is off. Turn it on in the Server section and restart.",
+    "Cevap boş: %@ token'lık sınırın tamamı düşünmeye gitti.": "Empty answer: the whole %@-token limit went into thinking.",
+    "Test klasörü kurulamadı: %@": "Couldn't set up the test folder: %@",
+    " (%@ adımda son cevap gelmedi)": " (no final answer within %@ steps)",
+    " · %@ bozuk çağrı geri çevrildi": " · %@ malformed calls sent back",
+
+    // Sonuç kartı
+    "Yerel model": "Local model",
+    "%@, %@ GB Mac'te": "%@ on a %@ GB Mac",
+    "Aynı %@ otomatik test · tamamen yerel, internet yok": "Same %@ automatic tests · fully local, no internet",
+    "%@ otomatik test · tamamen yerel, internet yok": "%@ automatic tests · fully local, no internet",
+    " · llama.cpp · %@K bağlam": " · llama.cpp · %@K context",
+    "en iyi": "best",
+    "token/sn ort.": "tokens/s avg.",
+    "Hepsini geçti": "Passed all",
+    "Geçemedikleri": "Failed",
+    "Sonuç kartı %@.png": "Result card %@.png",
+
+    // Karşılaştırma ve bileşenler
+    "Karşılaştırılacak soruyu yaz…": "Type the question to compare…",
+    "Resim ekle": "Add image",
+    "İki cevap sırayla üretilir, böylece hız ölçümleri birbirini etkilemez.": "The two answers are generated one after the other, so the speed numbers don't affect each other.",
+    "Sırasını bekliyor…": "Waiting its turn…",
+    "Sonuç burada görünecek.": "The result will show up here.",
+    "değiştirildi": "modified",
+    "Eklenen resim": "Attached image",
+    "Resmi kaldır": "Remove image",
+    "ilk token ": "first token ",
+    "%@ token": "%@ tokens",
+    "%@ token istem işlendi": "%@ prompt tokens processed",
+
+    // Belgeler
+    "Hepsini kaldır": "Remove all",
+    "Klasör ya da dosyaları buraya sürükle": "Drop folders or files here",
+    "PDF, metin, Markdown, kod, CSV, JSON. Klasörün alt klasörleri de okunur. Hiçbir şey bu Mac'ten çıkmaz.": "PDF, text, Markdown, code, CSV, JSON. Subfolders are read too. Nothing leaves this Mac.",
+    "Klasör ya da dosya seç": "Choose a folder or files",
+    "%@ dosyasını kaldır": "Remove %@",
+    "ve %@ dosya daha": "and %@ more files",
+    "%@ dosya · ~%@ token": "%@ files · ~%@ tokens",
+    "Okunamadı: ": "Couldn't read: ",
+    "Ne yapalım?": "What should we do?",
+    "Belgelere soru sor: ör. sözleşmede fesih süresi kaç gün?": "Ask the documents: e.g. what is the notice period in the contract?",
+    "Sor": "Ask",
+    "Hepsini özetle": "Summarize all",
+    "Önce üstteki model menüsünden bir model yükle.": "First load a model from the model menu at the top.",
+    "%@ parça · yaklaşık %@ dk": "%@ parts · about %@ min",
+    "Markdown olarak kaydet": "Save as Markdown",
+    "Kaynaklar": "Sources",
+    "Özet": "Summary",
+    "Belge özeti": "Document summary",
+    "Belge cevabı": "Document answer",
+    "%@ · bölüm %@/%@ özetleniyor": "Summarizing %@ · part %@/%@",
+    "%@ özetleniyor": "Summarizing %@",
+    "Aşağıdaki metin \"%@\" dosyasının %@/%@. bölümü. ": "The text below is part %2$@/%3$@ of the file \"%1$@\". ",
+    "Aşağıdaki metin \"%@\" dosyasının tamamı. ": "The text below is the whole file \"%@\". ",
+    "Önemli bilgileri, sayıları ve adları koruyarak Türkçe ve madde madde özetle. Yalnız metinde olanı yaz.\n\n<metin>\n%@\n</metin>": "Summarize it in English as bullet points, keeping the important facts, numbers and names. Only write what is in the text.\n\n<text>\n%@\n</text>",
+    "%@ · bölüm özetleri birleştiriliyor": "%@ · merging part summaries",
+    "Genel özet yazılıyor": "Writing the overall summary",
+    "tüm belgeler": "all documents",
+    "## Genel özet\n\n%@\n\n": "## Overall summary\n\n%@\n\n",
+    "Bitti": "Done",
+    "Durduruldu": "Stopped",
+    "Aşağıda \"%@\" için parça özetleri var. Bunları tekrarsız, düzenli tek bir Türkçe özette birleştir: ": "Below are part summaries for \"%@\". Merge them into one tidy English summary without repetition: ",
+    "önce 2-3 cümlelik genel bakış, sonra en önemli maddeler.\n\n%@": "first a 2–3 sentence overview, then the most important points.\n\n%@",
+    "Bu özetleri tek bir kısa özette birleştir:\n\n": "Merge these summaries into one short summary:\n\n",
+    "%@ bölüm içinden en ilgili %@ tanesi okunuyor": "Reading the %2$@ most relevant of %1$@ parts",
+    " · bölüm %@/%@": " · part %@/%@",
+    "Aşağıdaki kaynaklara dayanarak soruyu Türkçe cevapla. Her bilginin sonuna dayandığı kaynağın numarasını ": "Answer the question in English based on the sources below. After each fact, write the number of the source it comes from, ",
+    "[1] gibi yaz. Kaynaklarda cevap yoksa bunu açıkça söyle, uydurma.\n\n<kaynaklar>\n%@\n</kaynaklar>\n\nSoru: %@": "like [1]. If the sources don't contain the answer, say so plainly; don't make anything up.\n\n<sources>\n%@\n</sources>\n\nQuestion: %@",
+    "Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır.": "The answer came back empty: the token limit went into thinking. Raise max tokens in the preset.",
+    "Hazırlanıyor": "Preparing",
+    "Model bir bölüm için boş cevap verdi (düşünmesi token sınırını doldurdu). Tekrar dene ya da daha düşük sıcaklıklı bir ön ayar seç.": "The model gave an empty answer for one part (its thinking filled the token limit). Try again or pick a preset with a lower temperature.",
+
+    // Ajan
+    "Cevap durduruldu.": "Answer stopped.",
+    "Adım %@: sonuçlara bakıyor…": "Step %@: looking at the results…",
+    "Onayını bekliyor: %@": "Waiting for your approval: %@",
+    "Kullanıcı bu işlemi reddetti.": "The user denied this action.",
+    "%@ çalışıyor": "Running %@",
+    "%@ adımda bitiremedim. Görevi daha küçük parçalara bölüp tekrar dene.": "I couldn't finish in %@ steps. Split the task into smaller parts and try again.",
+    "Seç": "Choose",
+    "Modelin okuyup yazabileceği çalışma klasörünü seç. Model bu klasörün dışına çıkamaz.": "Choose the working folder the model may read and write. The model can't leave this folder.",
+    "Matematik ifadesini kesin hesaplar. + - * / % ^ ve parantez destekler.": "Evaluates a math expression exactly. Supports + - * / % ^ and parentheses.",
+    "Hesaplanacak ifade, ör. (48271*9133+17)/3": "Expression to evaluate, e.g. (48271*9133+17)/3",
+    "Bu Mac'teki güncel tarih, gün ve saati verir.": "Returns the current date, weekday and time on this Mac.",
+    "Kullanıcının Beyin'inden özet: kim olduğu, son günlerin işleri, açık görevler. Sohbetin başında bir kez çağır.": "Summary from the user's Brain: who they are, recent work, open tasks. Call it once at the start of the chat.",
+    "Kullanıcının Beyin'inde (notlar, kararlar, projeler, video stili) anlamca arar. Bir şeyi hatırlaman gerekince önce bunu kullan.": "Semantic search over the user's Brain (notes, decisions, projects, video style). Use this first whenever you need to remember something.",
+    "Aranacak konu": "Topic to search for",
+    "İsteğe bağlı: Kararlar, Projeler, Notlar, Video, Gorevler…": "Optional: Kararlar, Projeler, Notlar, Video, Gorevler…",
+    "Beyin'deki bir notun tamamını okur.": "Reads a whole note from the Brain.",
+    "Notun yolu, ör. Kararlar/x.md": "Path of the note, e.g. Kararlar/x.md",
+    "Kalıcı bilgiyi Beyin'e yazar: biten iş, karar, ölçüm sonucu, ders. Sohbetin tamamını değil özünü yaz.": "Writes lasting information to the Brain: finished work, a decision, a measured result, a lesson. Write the gist, not the whole chat.",
+    "Kısa başlık": "Short title",
+    "Öz bilgi; rakamlar ölçümden": "The gist; numbers from measurements",
+    "Virgülle ayrılmış, ör. inkling,x-paylasim": "Comma-separated, e.g. inkling,x-paylasim",
+    "Kullanıcının X paylaşım tarzı kuralları. X taslağı yazmadan önce oku.": "The user's style rules for X posts. Read before drafting for X.",
+    "X flood taslağını kullanıcının onay kuyruğuna koyar; GÖNDERMEZ, gönderimi kullanıcı yapar. ": "Puts an X thread draft in the user's approval queue; it does NOT post, the user posts it. ",
+    "Rakamları yalnız Beyin notlarından al.": "Take numbers only from Brain notes.",
+    "Taslağın konusu": "Topic of the draft",
+    "Tweetler sırayla; aralarına tek başına bir satırda ---tweet--- koy. Her biri en fazla 280 karakter.": "Tweets in order; put ---tweet--- on a line of its own between them. Each at most 280 characters.",
+    "Rakamların geldiği Beyin not yolları, virgülle ayrılmış": "Brain note paths the numbers come from, comma-separated",
+    "Bir beceriyi (adım adım talimat paketi) açar. İş aşağıdaki becerilerden birine uyuyorsa önce bunu çağır, ": "Opens a skill (a step-by-step instruction pack). If the task fits one of the skills below, call this first, ",
+    "sonra talimatlara uy. Becerinin ek dosyaları için `dosya` ver (ör. references/x.md). Beceriler:\n": "then follow the instructions. For a skill's extra files pass `dosya` (e.g. references/x.md). Skills:\n",
+    "Becerinin adı, ör. hyperframes": "Name of the skill, e.g. hyperframes",
+    "İsteğe bağlı: beceri klasörüne göre göreli dosya; boşsa SKILL.md": "Optional: file relative to the skill folder; SKILL.md if empty",
+    "Çalışma klasöründeki dosya ve klasörleri listeler.": "Lists the files and folders in the working folder.",
+    "Çalışma klasörüne göre göreli yol; kök için \".\"": "Path relative to the working folder; \".\" for the root",
+    "Çalışma klasöründeki bir metin, kod ya da PDF dosyasını okur.": "Reads a text, code or PDF file in the working folder.",
+    "Çalışma klasörüne göre göreli dosya yolu": "File path relative to the working folder",
+    "Çalışma klasörüne bir metin dosyası yazar (varsa üzerine yazar). Kullanıcı onaylamalı.": "Writes a text file to the working folder (overwrites it if it exists). The user must approve.",
+    "Göreli dosya yolu": "Relative file path",
+    "Dosyanın tam içeriği": "Full content of the file",
+    "Çalışma klasöründe bir kabuk (zsh) komutu çalıştırır, çıktısını döndürür. Kullanıcı onaylamalı.": "Runs a shell (zsh) command in the working folder and returns its output. The user must approve.",
+    "Çalıştırılacak komut, ör. ls -la": "Command to run, e.g. ls -la",
+    "%@ dosyasına %@ karakter yazılacak.": "%2$@ characters will be written to %1$@.",
+    "Hata: ifade verilmedi.": "Error: no expression given.",
+    "Klasör boş ya da okunamadı.": "The folder is empty or couldn't be read.",
+    "%@ (%@ bayt)": "%@ (%@ bytes)",
+    "\n… ve %@ öğe daha": "\n… and %@ more items",
+    "Dosya okunamadı (yok, boş ya da metin değil).": "Couldn't read the file (missing, empty or not text).",
+    "\n[… dosyanın devamı kesildi]": "\n[… rest of the file cut off]",
+    "Yazıldı: %@": "Written: %@",
+    "Yazılamadı: %@": "Couldn't write: %@",
+    "Böyle bir araç yok: %@": "No such tool: %@",
+    "Hata: yol çalışma klasörünün dışında ya da çalışma klasörü seçilmedi.": "Error: the path is outside the working folder, or no working folder is chosen.",
+    "Çalıştırılamadı: %@": "Couldn't run: %@",
+    "\n[… çıktı kesildi]": "\n[… output cut off]",
+    "çıkış kodu %@\n": "exit code %@\n",
+    "(çıktı yok)": "(no output)",
+    "ifade anlaşılamadı": "couldn't parse the expression",
+    "sıfıra bölme": "division by zero",
+    "kapanmayan parantez": "unclosed parenthesis",
+    "sayı bekleniyordu": "expected a number",
+    "Sonuç yok.": "No results.",
+    "Hata: %@": "Error: %@",
+    "Kaydedildi: ": "Saved: ",
+    "Kuyruğa kondu, kullanıcı onaylayınca gider.\n": "Queued; it goes out once the user approves.\n",
+    "\n[… kesildi]": "\n[… cut off]",
+    "Beyin'e ulaşılamadı (beyin serve açık mı?): %@": "Couldn't reach the Brain (is `beyin serve` running?): %@",
+    "Böyle bir beceri yok: %@. Var olanlar: ": "No such skill: %@. Available: ",
+    "Hata: yol beceri klasörünün dışında.": "Error: the path is outside the skill folder.",
+    "Okunamadı: %@": "Couldn't read: %@",
+    "Beceri klasörü: %@\nİçindeki dosyalar: %@\n\n": "Skill folder: %@\nFiles in it: %@\n\n",
+    "\n[… devamı kesildi]": "\n[… rest cut off]",
+    "Hata: '%@' diye bir araç yok. Kullanılabilen araçlar: %@.": "Error: there is no tool called '%@'. Available tools: %@.",
+    "Hata: %@ argümanları geçerli JSON değil. Şu biçimde tekrar çağır: {\"ad\": \"değer\"}. Gelen: %@": "Error: the arguments for %@ are not valid JSON. Call again in this form: {\"name\": \"value\"}. Received: %@",
+    "Hata: %@ için zorunlu argüman eksik: %@. Bunlarla tekrar çağır.": "Error: %@ is missing required arguments: %@. Call again with them.",
+
+    // Sunucu
+    "Sunucuya bağlanılamadı. Sunucu bölümünden başlatıp tekrar dene.": "Couldn't connect to the server. Start it in the Server section and try again.",
+    "Sunucu zamanında cevap vermedi. Tekrar dene ya da en fazla token sayısını düşür.": "The server didn't answer in time. Try again or lower max tokens.",
+    "Sunucu %@ hatası döndü.": "The server returned error %@.",
+    "Sunucu hatası.": "Server error.",
+    "Sunucudan anlaşılmayan cevap geldi.": "The server sent a response that couldn't be read.",
+    "127.0.0.1:%@ üzerinde çalışan bir sunucu bulundu, o kullanılıyor.": "Found a server already running on 127.0.0.1:%@; using it.",
+    "Önceki oturumdan kalan sunucu (pid %@) kapatılıyor.": "Shutting down the server left over from the last session (pid %@).",
+    "Harici sunucu kapandı.": "The external server stopped.",
+    "llama-server bulunamadı: %@. Yolu Sunucu bölümünden düzelt.": "llama-server not found: %@. Fix the path in the Server section.",
+    "Model dosyası bulunamadı: %@. Yolu Sunucu bölümünden düzelt.": "Model file not found: %@. Fix the path in the Server section.",
+    "Bu modelin klasöründe resim dosyası (mmproj) yok; resim desteği kapalı başlatılıyor.": "This model's folder has no image file (mmproj); starting with image support off.",
+    "Atomic Engine bulunamadı: %@. ~/atomic-engine içinde derlenmesi gerekiyor.": "Atomic Engine not found: %@. It needs to be built in ~/atomic-engine.",
+    "Model dosyası bulunamadı: %@.": "Model file not found: %@.",
+    "Klasörde DSpark taslak modeli yok; taslaksız çalışılıyor (daha yavaş).": "No DSpark draft model in the folder; running without a draft (slower).",
+    "Başlatılıyor (%@): ": "Starting (%@): ",
+    "Sunucu başlatılamadı: %@": "Couldn't start the server: %@",
+    "Model değiştiriliyor: %@": "Switching model: %@",
+    "Harici sunucu (pid %@) kapatılıyor, yönetim bu uygulamaya geçiyor.": "Shutting down the external server (pid %@); this app takes over.",
+    "Sunucu kapandı (kod %@).": "The server stopped (code %@).",
+    "Son kayıt: %@": "Last log: %@",
+]

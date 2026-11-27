@@ -82,7 +82,7 @@ struct Chip: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Text(title)
-                if dirty { Circle().frame(width: 6, height: 6).accessibilityLabel("değiştirildi") }
+                if dirty { Circle().frame(width: 6, height: 6).accessibilityLabel(L("değiştirildi")) }
             }
             .font(Theme.Font.callout.weight(selected ? .semibold : .regular))
             .foregroundStyle(selected ? .white : Theme.textPrimary)
@@ -124,7 +124,7 @@ struct AttachmentThumb: View {
                     .scaledToFill()
                     .frame(width: size, height: size)
                     .clipShape(.rect(cornerRadius: Theme.Radius.tile, style: .continuous))
-                    .accessibilityLabel("Eklenen resim")
+                    .accessibilityLabel(L("Eklenen resim"))
             }
             if let onRemove {
                 Button(action: onRemove) {
@@ -135,7 +135,7 @@ struct AttachmentThumb: View {
                 }
                 .buttonStyle(.plain)
                 .padding(3)
-                .accessibilityLabel("Resmi kaldır")
+                .accessibilityLabel(L("Resmi kaldır"))
             }
         }
     }
@@ -149,15 +149,15 @@ struct StatsLine: View {
         HStack(spacing: Theme.Space.s) {
             Label(Self.num(stats.generatedPerSecond, 1) + " token/sn", systemImage: "speedometer")
             Text("·")
-            Text("\(stats.generatedTokens) token")
+            Text(L("\(stats.generatedTokens) token"))
             if let ft = stats.firstTokenSeconds {
                 Text("·")
-                Text("ilk token " + Self.num(ft, 1) + " sn")
+                Text(L("ilk token ") + Self.num(ft, 1) + " sn")
             }
             if stats.promptTokens > 0 {
                 Text("·")
                 Text("okuma " + Self.num(stats.promptPerSecond, 0) + " token/sn")
-                    .help("\(stats.promptTokens) token istem işlendi")
+                    .help(L("\(stats.promptTokens) token istem işlendi"))
             }
         }
         .font(Theme.Font.stat)

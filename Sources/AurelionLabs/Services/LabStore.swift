@@ -12,11 +12,11 @@ final class LabStore {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .chat: "Yeni sohbet"
-            case .documents: "Belgeler"
-            case .compare: "Karşılaştır"
-            case .tests: "Testler"
-            case .settings: "Ayarlar"
+            case .chat: L("Yeni sohbet")
+            case .documents: L("Belgeler")
+            case .compare: L("Karşılaştır")
+            case .tests: L("Testler")
+            case .settings: L("Ayarlar")
             }
         }
         var symbol: String {
@@ -43,6 +43,20 @@ final class LabStore {
     }
     var palette: Palette = Palette.current {
         didSet { Palette.current = palette; UserDefaults.standard.set(palette.rawValue, forKey: "palette") }
+    }
+    /// Arayüz dili; değişince metinler hemen yeni dille çizilir.
+    var language: Lang = Lang.current {
+        didSet {
+            guard language != oldValue else { return }
+            Lang.current = language
+            UserDefaults.standard.set(language.rawValue, forKey: Lang.storageKey)
+            // Hazır ön ayarların sistem promptu ve test adları seçili dilde yeniden kurulur.
+            let builtIns = Preset.defaults
+            let wasModified = paramsModified
+            presets = presets.map { p in builtIns.first { $0.builtIn && $0.name == p.name && p.builtIn }.map { var n = $0; n.id = p.id; return n } ?? p }
+            if !wasModified, let p = activePreset { params = p.params }
+            if !tests.isRunning && tests.finished.isEmpty { tests.rebuild() }
+        }
     }
 
     // Sohbet
@@ -227,9 +241,9 @@ final class LabStore {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .fast: "Hızlı sohbet"
-            case .general: "Genel"
-            case .long: "Uzun metin"
+            case .fast: L("Hızlı sohbet")
+            case .general: L("Genel")
+            case .long: L("Uzun metin")
             }
         }
         var symbol: String {
@@ -256,12 +270,12 @@ final class LabStore {
     }
 
     func detail(for mode: UseMode) -> String {
-        guard let m = model(for: mode) else { return "Uygun model yok" }
+        guard let m = model(for: mode) else { return L("Uygun model yok") }
         let q = m.quant.isEmpty ? m.fileName : m.quant
         switch mode {
-        case .fast: return m.fileName.contains("-AD-") ? "\(q) · Atomic · 4K · resim yok" : "\(q) · 16K"
-        case .general: return "\(q) · 16K" + (m.mmproj != nil ? " · resim okur" : "")
-        case .long: return "\(q) · 32K · resim kapalı"
+        case .fast: return m.fileName.contains("-AD-") ? L("\(q) · Atomic · 4K · resim yok") : "\(q) · 16K"
+        case .general: return "\(q) · 16K" + (m.mmproj != nil ? L(" · resim okur") : "")
+        case .long: return L("\(q) · 32K · resim kapalı")
         }
     }
 
@@ -403,7 +417,7 @@ final class LabStore {
                 self.messages[index].isStreaming = false
                 if self.messages[index].text.isEmpty && self.messages[index].reasoning.isEmpty
                     && self.messages[index].error == nil {
-                    self.messages[index].error = "Cevap durduruldu."
+                    self.messages[index].error = L("Cevap durduruldu.")
                 }
             }
             self.isGenerating = false
@@ -416,7 +430,7 @@ final class LabStore {
     /// Model araç istedikçe çalıştırıp sonucu geri verir; araç istemeyen ilk cevap son cevaptır.
     private func runAgent() {
         isGenerating = true
-        agentStep = "Düşünüyor…"
+        agentStep = L("Düşünüyor…")
         let convID = currentID
         let p = params
         let client = LLMClient(baseURL: server.baseURL)
@@ -432,7 +446,7 @@ final class LabStore {
                 for step in 1...Self.maxAgentSteps {
                     try Task.checkCancellation()
                     guard self.currentID == convID else { break }
-                    self.agentStep = step == 1 ? "Düşünüyor…" : "Adım \(step): sonuçlara bakıyor…"
+                    self.agentStep = step == 1 ? L("Düşünüyor…") : L("Adım \(step): sonuçlara bakıyor…")
                     let r = try await client.complete(messages: self.messages, params: p, toolsJSON: tools)
                     guard self.currentID == convID else { break }
                     if r.toolCalls.isEmpty {
@@ -440,7 +454,7 @@ final class LabStore {
                         reply.reasoning = r.reasoning
                         reply.stats = r.stats
                         reply.presetName = self.paramsModified ? nil : self.activePreset?.name
-                        if reply.text.isEmpty { reply.error = "Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır." }
+                        if reply.text.isEmpty { reply.error = L("Cevap boş geldi: token sınırı düşünmeye gitti. Ön ayarda en fazla token'ı artır.") }
                         self.messages.append(reply)
                         finished = true
                         break
@@ -458,15 +472,15 @@ final class LabStore {
                         if let problem = ToolRepair.check(&call, schema: schema) {
                             result = AgentTools.Outcome(text: problem, ok: false)
                         } else if AgentTools.risk(of: call.name) == .needsApproval {
-                            self.agentStep = "Onayını bekliyor: \(call.name)"
+                            self.agentStep = L("Onayını bekliyor: \(call.name)")
                             let ok = await self.requestApproval(call)
-                            result = ok ? AgentTools.Outcome(text: "", ok: true) : AgentTools.Outcome(text: "Kullanıcı bu işlemi reddetti.", ok: false)
+                            result = ok ? AgentTools.Outcome(text: "", ok: true) : AgentTools.Outcome(text: L("Kullanıcı bu işlemi reddetti."), ok: false)
                             if ok {
-                                self.agentStep = "\(call.name) çalışıyor"
+                                self.agentStep = L("\(call.name) çalışıyor")
                                 result = await AgentTools.run(call, folder: folder, maxChars: maxChars)
                             }
                         } else {
-                            self.agentStep = "\(call.name) çalışıyor"
+                            self.agentStep = L("\(call.name) çalışıyor")
                             result = await AgentTools.run(call, folder: folder, maxChars: maxChars)
                         }
                         var t = ChatMessage(role: .tool, text: result.text)
@@ -478,7 +492,7 @@ final class LabStore {
                 }
                 if !finished && self.currentID == convID {
                     var m = ChatMessage(role: .assistant, text: "")
-                    m.error = "\(Self.maxAgentSteps) adımda bitiremedim. Görevi daha küçük parçalara bölüp tekrar dene."
+                    m.error = L("\(Self.maxAgentSteps) adımda bitiremedim. Görevi daha küçük parçalara bölüp tekrar dene.")
                     self.messages.append(m)
                 }
             } catch is CancellationError {
@@ -510,8 +524,8 @@ final class LabStore {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
-        panel.prompt = "Seç"
-        panel.message = "Modelin okuyup yazabileceği çalışma klasörünü seç. Model bu klasörün dışına çıkamaz."
+        panel.prompt = L("Seç")
+        panel.message = L("Modelin okuyup yazabileceği çalışma klasörünü seç. Model bu klasörün dışına çıkamaz.")
         if panel.runModal() == .OK, let url = panel.url { agentFolder = url }
     }
 
@@ -616,9 +630,9 @@ final class LabStore {
         if let e = error as? URLError {
             switch e.code {
             case .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet:
-                return "Sunucuya bağlanılamadı. Sunucu bölümünden başlatıp tekrar dene."
+                return L("Sunucuya bağlanılamadı. Sunucu bölümünden başlatıp tekrar dene.")
             case .timedOut:
-                return "Sunucu zamanında cevap vermedi. Tekrar dene ya da en fazla token sayısını düşür."
+                return L("Sunucu zamanında cevap vermedi. Tekrar dene ya da en fazla token sayısını düşür.")
             default: break
             }
         }

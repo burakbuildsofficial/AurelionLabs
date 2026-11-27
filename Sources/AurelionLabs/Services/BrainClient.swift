@@ -21,7 +21,7 @@ enum BrainClient {
             case "beyin_ara":
                 let data = try await get("ara", ["q": a["sorgu"] ?? "", "limit": "6", "klasor": a["klasor"]])
                 let rows = (try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [[String: Any]]) ?? []
-                text = rows.isEmpty ? "Sonuç yok." : rows.map {
+                text = rows.isEmpty ? L("Sonuç yok.") : rows.map {
                     "• \($0["baslik"] as? String ?? "") — \($0["yol"] as? String ?? "")\n  \($0["metin"] as? String ?? "")"
                 }.joined(separator: "\n")
             case "beyin_oku":
@@ -32,7 +32,7 @@ enum BrainClient {
                 if let e = a["etiketler"], !e.isEmpty {
                     body["etiketler"] = e.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 }
-                text = "Kaydedildi: " + (try await post("kaydet", body))
+                text = L("Kaydedildi: ") + (try await post("kaydet", body))
             case "x_tarzi":
                 text = try await get("x/tarz", [:])
             case "x_taslak_koy":
@@ -43,13 +43,13 @@ enum BrainClient {
                 let raw = try await post("x/taslak", ["baslik": a["baslik"] ?? "", "tweetler": tweets,
                                                       "kaynaklar": sources, "ajan": "inkling"])
                 let obj = (try? JSONSerialization.jsonObject(with: Data(raw.utf8))) as? [String: Any]
-                text = "Kuyruğa kondu, kullanıcı onaylayınca gider.\n" + (obj?["ozet"] as? String ?? raw)
+                text = L("Kuyruğa kondu, kullanıcı onaylayınca gider.\n") + (obj?["ozet"] as? String ?? raw)
             default:
-                return .init(text: "Böyle bir araç yok: \(name)", ok: false)
+                return .init(text: L("Böyle bir araç yok: \(name)"), ok: false)
             }
-            return .init(text: text.count > maxChars ? String(text.prefix(maxChars)) + "\n[… kesildi]" : text, ok: true)
+            return .init(text: text.count > maxChars ? String(text.prefix(maxChars)) + L("\n[… kesildi]") : text, ok: true)
         } catch {
-            return .init(text: "Beyin'e ulaşılamadı (beyin serve açık mı?): \(error.localizedDescription)", ok: false)
+            return .init(text: L("Beyin'e ulaşılamadı (beyin serve açık mı?): \(error.localizedDescription)"), ok: false)
         }
     }
 
