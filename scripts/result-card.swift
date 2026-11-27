@@ -1,6 +1,6 @@
 // Test sonuçlarından paylaşılabilir sonuç kartı üretir (1600×900 PNG).
 // swift scripts/result-card.swift <çıktı.png> <ikon.png> <ad|sonuç.txt|model.gguf> [<ad|sonuç.txt|model.gguf> ...]
-// Sonuç dosyası: InklingLab --run-tests çıktısı.
+// Sonuç dosyası: AurelionLabs --run-tests çıktısı.
 import AppKit
 import SwiftUI
 
@@ -15,6 +15,7 @@ struct Run {
     var speeds: [Double] = []
     var failed: [String] = []
     var speedOverride: Double?
+    var extra: String?   // isteğe bağlı üçüncü ölçüm, ör. "27,2 dk" (EXTRAS ortam değişkeni)
     var avgSpeed: Double { speedOverride ?? (speeds.isEmpty ? 0 : speeds.reduce(0, +) / Double(speeds.count)) }
     var ratio: Double { total == 0 ? 0 : Double(passed) / Double(total) }
 
@@ -82,6 +83,12 @@ struct RunCard: View {
                     Text(tr(run.avgSpeed, 1)).font(.system(size: 52, weight: .bold).monospacedDigit()).foregroundStyle(indigo)
                     Text(ProcessInfo.processInfo.environment["SPEED_LABEL"] ?? "token/sn ort.").font(.system(size: 20)).foregroundStyle(sub)
                 }
+                if let x = run.extra {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(x).font(.system(size: 52, weight: .bold).monospacedDigit()).foregroundStyle(ink)
+                        Text(ProcessInfo.processInfo.environment["EXTRA_LABEL"] ?? "").font(.system(size: 20)).foregroundStyle(sub)
+                    }
+                }
             }
             VStack(spacing: 11) {
                 ForEach(run.categories, id: \.name) { c in
@@ -132,7 +139,7 @@ struct ResultCard: View {
             HStack(spacing: 22) {
                 if let icon { Image(nsImage: icon).resizable().frame(width: 92, height: 92) }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Inkling 2 Mini, 24 GB MacBook'ta").font(.system(size: 46, weight: .bold)).foregroundStyle(ink)
+                    Text(ProcessInfo.processInfo.environment["TITLE"] ?? "Inkling 2 Mini, 24 GB MacBook'ta").font(.system(size: 46, weight: .bold)).foregroundStyle(ink)
                     Text(ProcessInfo.processInfo.environment["SUBTITLE"] ?? "Aynı \(runs.first?.total ?? 0) otomatik test · tamamen yerel, internet yok")
                         .font(.system(size: 24)).foregroundStyle(sub)
                 }
@@ -145,7 +152,7 @@ struct ResultCard: View {
             HStack {
                 Text(ProcessInfo.processInfo.environment["FOOTER"] ?? "Apple M5 Pro · 24 GB · llama.cpp · Unsloth GGUF · 16K bağlam")
                 Spacer()
-                Text("Inkling Lab")
+                Text("AurelionLabs")
                     .fontWeight(.semibold).foregroundStyle(indigo)
             }
             .font(.system(size: 19)).foregroundStyle(sub)
@@ -167,6 +174,9 @@ var i = 3
 while i + 2 < a.count { runs.append(Run(label: a[i], file: a[i + 1], model: a[i + 2])); i += 3 }
 if let sp = ProcessInfo.processInfo.environment["SPEEDS"] {
     for (j, v) in sp.split(separator: ",").enumerated() where j < runs.count { runs[j].speedOverride = Double(v) }
+}
+if let ex = ProcessInfo.processInfo.environment["EXTRAS"] {
+    for (j, v) in ex.split(separator: "|").enumerated() where j < runs.count { runs[j].extra = String(v) }
 }
 // Bir çalıştırmada olmayan kategoriyi "yok" olarak göster (ör. resim desteği olmayan motor).
 let allCats = runs.flatMap { $0.categories.map(\.name) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
